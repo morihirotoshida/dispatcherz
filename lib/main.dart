@@ -18,6 +18,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:file_picker/file_picker.dart'; 
+import 'l10n/app_localizations.dart';
 
 // ============================================================================
 // Module: LayoutSettings
@@ -30,8 +31,8 @@ class LayoutSettings {
   static ValueNotifier<double> reservationListRatioNotifier = ValueNotifier(1 / 6); 
   static ValueNotifier<double> leftFormRatioNotifier = ValueNotifier(1 / 3); 
   static ValueNotifier<String> themeModeNotifier = ValueNotifier('light'); 
+  static String currentLanguage = 'ja'; // ★確認1：この変数はありますか？
 
-  // Load layout profile from local JSON file
   // ローカルのJSONファイルからレイアウトプロファイルを読み込む
   static Future<void> load([String profileName = 'default']) async {
     try {
@@ -47,11 +48,11 @@ class LayoutSettings {
         } else if (data.containsKey('isDarkMode')) {
           themeModeNotifier.value = data['isDarkMode'] == true ? 'dark' : 'light';
         }
+        currentLanguage = data['language'] ?? 'ja'; // ★確認2：ここに入っていますか？
       }
     } catch (e) {}
   }
 
-  // Save current layout and theme to local JSON file
   // 現在のレイアウトとテーマをローカルのJSONファイルに保存する
   static Future<void> save(String profileName) async {
     try {
@@ -61,6 +62,7 @@ class LayoutSettings {
         'reservationListRatio': reservationListRatioNotifier.value,
         'leftFormRatio': leftFormRatioNotifier.value,
         'themeMode': themeModeNotifier.value, 
+        'language': currentLanguage, // ★確認3：保存するデータに言語が含まれていますか？
       };
       await file.writeAsString(jsonEncode(data));
 
@@ -129,7 +131,8 @@ String formatSafeTime(String? rawTime) {
   if (safeTime.length > 16) safeTime = safeTime.substring(0, 16);
   try {
     DateTime dt = DateTime.parse(safeTime.replaceFirst(' ', 'T'));
-    return '${dt.month}月${dt.day}日 ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
+    // 「月/日 時:分」という万国共通のフォーマットに変更
+    return '${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   } catch (e) {
     return safeTime;
   }
@@ -151,8 +154,32 @@ void main() async {
 // モジュール: DispatcherZApp
 // 説明: テーマとローカリゼーションを設定するルートウィジェット。
 // ============================================================================
-class DispatcherZApp extends StatelessWidget {
+class DispatcherZApp extends StatefulWidget {
   const DispatcherZApp({Key? key}) : super(key: key);
+
+  // どこからでも言語を切り替えられるようにするための静的メソッド
+  static _DispatcherZAppState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_DispatcherZAppState>();
+
+  @override
+  State<DispatcherZApp> createState() => _DispatcherZAppState();
+}
+
+class _DispatcherZAppState extends State<DispatcherZApp> {
+  late Locale _locale;
+
+  @override
+  void initState() {
+    super.initState();
+    // ★保存されている言語設定を読み込んで起動する
+    _locale = LayoutSettings.currentLanguage == 'en' ? const Locale('en', '') : const Locale('ja', 'JP');
+  }
+
+  void setLocale(Locale value) {
+    setState(() {
+      _locale = value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -164,60 +191,41 @@ class DispatcherZApp extends StatelessWidget {
           title: 'dispatcherZ',
           debugShowCheckedModeBanner: false,
           
+          // --- 多言語化設定 ---
+          locale: _locale,
           localizationsDelegates: const [
+            AppLocalizations.delegate, // 自動生成される辞書
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: const [
             Locale('ja', 'JP'), 
+            Locale('en', ''),
           ],
+          // -------------------
 
           scrollBehavior: const MaterialScrollBehavior().copyWith(
             dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch, PointerDeviceKind.trackpad},
           ),
           themeMode: isDark ? ThemeMode.dark : ThemeMode.light, 
-          // Light Theme Configuration / ライトモードのテーマ設定
+          // Light Theme Configuration
           theme: ThemeData(
             brightness: Brightness.light,
             primarySwatch: Colors.blueGrey,
             scaffoldBackgroundColor: Colors.white,
-            menuTheme: const MenuThemeData(
-              style: MenuStyle(
-                shape: MaterialStatePropertyAll(
-                  RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                ),
-              ),
-            ),
-            popupMenuTheme: const PopupMenuThemeData(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-            ),
-            inputDecorationTheme: const InputDecorationTheme(
-              border: OutlineInputBorder(),
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            ),
+            menuTheme: const MenuThemeData(style: MenuStyle(shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.zero)))),
+            popupMenuTheme: const PopupMenuThemeData(shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero)),
+            inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
           ),
-          // Dark Theme Configuration / ダークモードのテーマ設定
+          // Dark Theme Configuration
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primarySwatch: Colors.blueGrey,
             scaffoldBackgroundColor: Colors.grey[900],
-            menuTheme: const MenuThemeData(
-              style: MenuStyle(
-                shape: MaterialStatePropertyAll(
-                  RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                ),
-              ),
-            ),
-            popupMenuTheme: const PopupMenuThemeData(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-            ),
-            inputDecorationTheme: const InputDecorationTheme(
-              border: OutlineInputBorder(),
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            ),
+            menuTheme: const MenuThemeData(style: MenuStyle(shape: MaterialStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.zero)))),
+            popupMenuTheme: const PopupMenuThemeData(shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero)),
+            inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
           ),
           home: const MainScreen(),
         );
@@ -337,12 +345,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
   // Handle opening a new tab when an incoming call is detected
   // 着信を検知した際に新しいタブを開く処理
   void _handleIncomingCall(String phone) {
+    final l10n = AppLocalizations.of(context)!; // ★ここに追加！
     setState(() {
       final newTabIndex = _tabs.length;
       _tabs.insert(
         newTabIndex,
         DispatchTab(
-          title: '　📞着信: $phone　',
+          title: l10n.tabIncomingCall(phone),
           content: DispatchForm(
             key: UniqueKey(),
             initialData: {'phone': phone, 'isIncomingCall': true}, 
@@ -356,7 +365,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('📞 着信がありました！電話番号: $phone', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: Text(l10n.snackIncomingCall(phone), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         backgroundColor: Colors.pinkAccent,
         duration: const Duration(seconds: 5),
       )
@@ -415,23 +424,25 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     final btnBg = isColor ? Colors.redAccent : (isDark ? Colors.white : Colors.black);
     final btnFg = isColor ? Colors.white : (isDark ? Colors.black : Colors.white);
     final textCol = isDark ? Colors.white : Colors.black;
+    final l10n = AppLocalizations.of(context)!; // ★辞書を読み込み
+    final existingIndex = _tabs.indexWhere((tab) => tab.isAdminDashboard);
 
     return showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('本日もお疲れ様でした', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: const Text('配車業務を終了し、ウインドウを閉じますか？'),
+          title: Text(l10n.exitConfirmTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
+          content: Text(l10n.exitConfirmContent), // ★辞書
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text('キャンセル', style: TextStyle(color: textCol)),
+              child: Text(l10n.cancelButton, style: TextStyle(color: textCol)), // ★既存のcancelButtonを再利用
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: btnBg, foregroundColor: btnFg),
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('終了する'),
+              child: Text(l10n.exitButton), // ★辞書
             ),
           ],
         );
@@ -451,29 +462,30 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     final isDark = mode == 'dark';
     final btnBg = isDark ? Colors.white : Colors.black;
     final btnFg = isDark ? Colors.black : Colors.white;
+    final l10n = AppLocalizations.of(context)!; // ★辞書を読み込み
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: const Text('dispatcherZ について', style: TextStyle(fontWeight: FontWeight.bold)),
+          title: Text(l10n.aboutTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SelectableText('作者：利田盛宏'),
+              SelectableText(l10n.aboutAuthor), // ★辞書
               const SizedBox(height: 12),
-              Text('ソースコード：', style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.black54)),
+              Text(l10n.aboutSource, style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.black54)), // ★辞書
               const SelectableText('https://github.com/morihirotoshida/', style: TextStyle(color: Colors.blueAccent)),
               const SizedBox(height: 12),
-              Text('本ソフトウェアは、GPLライセンス 3.0に準拠します。', style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87)),
+              Text(l10n.aboutLicense, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87)), // ★辞書
             ],
           ),
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: btnBg, foregroundColor: btnFg),
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('閉じる'),
+              child: Text(l10n.closeButton), // ★既存のcloseButtonを再利用
             ),
           ],
         );
@@ -488,6 +500,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     final TextEditingController newPinController = TextEditingController();
     final TextEditingController confirmPinController = TextEditingController();
     bool isProcessing = false;
+    final l10n = AppLocalizations.of(context)!; // ★辞書を読み込み
 
     showDialog(
       context: context,
@@ -496,33 +509,33 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('管理者PINコードの変更', style: TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(l10n.pinChangeTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
               content: SizedBox(
                 width: 300,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('現在のPINコードと、新しいPINコードを入力してください。'),
+                    Text(l10n.pinChangeInstruction), // ★辞書
                     const SizedBox(height: 16),
                     TextField(
                       controller: currentPinController,
                       obscureText: true,
                       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
-                      decoration: const InputDecoration(labelText: '現在のPINコード', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: l10n.currentPin, border: const OutlineInputBorder()), // ★辞書
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: newPinController,
                       obscureText: true,
                       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
-                      decoration: const InputDecoration(labelText: '新しいPINコード', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: l10n.newPin, border: const OutlineInputBorder()), // ★辞書
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: confirmPinController,
                       obscureText: true,
                       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
-                      decoration: const InputDecoration(labelText: '新しいPINコード（確認用）', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: l10n.confirmNewPin, border: const OutlineInputBorder()), // ★辞書
                     ),
                   ],
                 ),
@@ -530,17 +543,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
               actions: [
                 TextButton(
                   onPressed: isProcessing ? null : () => Navigator.of(dialogContext).pop(),
-                  child: const Text('キャンセル'),
+                  child: Text(l10n.cancelButton), // ★既存辞書
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
                   onPressed: isProcessing ? null : () async {
                     if (newPinController.text != confirmPinController.text) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('新しいPINコードが一致しません。'), backgroundColor: Colors.redAccent));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pinMismatch), backgroundColor: Colors.redAccent)); // ★辞書
                       return;
                     }
                     if (newPinController.text.isEmpty || currentPinController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('すべての項目を入力してください。'), backgroundColor: Colors.redAccent));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.fillAllFields), backgroundColor: Colors.redAccent)); // ★辞書
                       return;
                     }
 
@@ -557,17 +570,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
                       if (response.statusCode == 200) {
                         Navigator.of(dialogContext).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('管理者PINコードを変更しました。'), backgroundColor: Colors.green));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pinChangeSuccess), backgroundColor: Colors.green)); // ★辞書
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('現在のPINコードが間違っています。'), backgroundColor: Colors.redAccent));
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pinChangeFailed), backgroundColor: Colors.redAccent)); // ★辞書
                       }
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('通信エラーが発生しました。'), backgroundColor: Colors.redAccent));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.commError), backgroundColor: Colors.redAccent)); // ★辞書
                     } finally {
                       setState(() => isProcessing = false);
                     }
                   },
-                  child: isProcessing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('変更を保存'),
+                  child: isProcessing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(l10n.saveChangesButton), // ★辞書
                 ),
               ],
             );
@@ -674,6 +687,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
       return;
     }
 
+    // =========================================================
+    // ★ここです！ダイアログを作る前に、辞書（l10n）を読み込みます！
+    final l10n = AppLocalizations.of(context)!; 
+    // =========================================================
+
     final TextEditingController pinController = TextEditingController();
     bool isVerifying = false;
 
@@ -684,20 +702,20 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              title: const Text('🔐 管理者認証', style: TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(l10n.dialogAdminAuthTitle, style: const TextStyle(fontWeight: FontWeight.bold)),
               content: SizedBox(
                 width: 300,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('管理者用ダッシュボードを開きます。\n管理者PINコードを入力してください。'),
+                    Text(l10n.dialogAdminAuthContent),
                     const SizedBox(height: 16),
                     TextField(
                       controller: pinController,
                       obscureText: true,
                       autofocus: true,
                       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
-                      decoration: const InputDecoration(labelText: '管理者PINコード', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: l10n.adminPinLabel, border: OutlineInputBorder()),
                     ),
                   ],
                 ),
@@ -740,17 +758,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                         
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                          content: Text('エラー ${verifyRes.statusCode}: ${verifyRes.body}'), 
+                          content: Text(l10n.snackAdminAuthError(verifyRes.statusCode.toString(), verifyRes.body)), 
                           backgroundColor: Colors.red
                         ));
                       }
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('通信エラーが発生しました。'), backgroundColor: Colors.red));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.commError), backgroundColor: Colors.red));
                     } finally {
                       if (mounted) setDialogState(() => isVerifying = false);
                     }
                   },
-                  child: isVerifying ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('認証'),
+                  child: isVerifying ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(l10n.authButton),
                 ),
               ],
             );
@@ -844,6 +862,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     final mode = LayoutSettings.themeModeNotifier.value;
     final isDark = mode == 'dark';
     final isColor = mode == 'color';
+    final l10n = AppLocalizations.of(context)!; // ★辞書を読み込み
 
     final saveBtnBg = isColor ? Colors.blueAccent : (isDark ? Colors.white : Colors.black);
     final delBtnBg = isColor ? Colors.redAccent : (isDark ? Colors.white : Colors.black);
@@ -852,16 +871,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('画面の保存／削除', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(l10n.layoutDialogTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('配車係の名前やシフト名（「山田用」「夜勤」など）を入力してください。'),
+            Text(l10n.layoutDialogContent), // ★辞書
             const SizedBox(height: 16),
             TextField(
               controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'レイアウト名', border: OutlineInputBorder()),
+              decoration: InputDecoration(labelText: l10n.layoutNameLabel, border: const OutlineInputBorder()), // ★辞書
               autofocus: true,
             ),
           ]
@@ -869,7 +888,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx), 
-            child: Text('キャンセル', style: TextStyle(color: isDark ? Colors.white : Colors.black))
+            child: Text(l10n.cancelButton, style: TextStyle(color: isDark ? Colors.white : Colors.black)) // ★既存の「キャンセル」を再利用
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: delBtnBg, foregroundColor: btnFg),
@@ -881,12 +900,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                 Navigator.pop(ctx);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('レイアウト「$name」を削除しました。', style: const TextStyle(fontWeight: FontWeight.bold)), backgroundColor: delBtnBg)
+                    SnackBar(content: Text(l10n.layoutDeletedMsg(name), style: const TextStyle(fontWeight: FontWeight.bold)), backgroundColor: delBtnBg) // ★変数（name）を渡して翻訳！
                   );
                 }
               }
             },
-            child: const Text('画面の削除'),
+            child: Text(l10n.deleteLayoutBtn), // ★辞書
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: saveBtnBg, foregroundColor: btnFg),
@@ -899,12 +918,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                 Navigator.pop(ctx);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('レイアウトを「$name」として保存しました。', style: const TextStyle(fontWeight: FontWeight.bold)), backgroundColor: saveBtnBg)
+                    SnackBar(content: Text(l10n.layoutSavedMsg(name), style: const TextStyle(fontWeight: FontWeight.bold)), backgroundColor: saveBtnBg) // ★変数（name）を渡して翻訳！
                   );
                 }
               }
             },
-            child: const Text('画面の保存'),
+            child: Text(l10n.saveLayoutBtn), // ★辞書
           ),
         ],
       )
@@ -916,6 +935,22 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     setState(() {
       _showReservationList = LayoutSettings.showReservationList;
     });
+    // ★確認：レイアウト読み込み時に、言語も強制的に切り替える指示が入っていますか？
+    if (LayoutSettings.currentLanguage == 'en') {
+      DispatcherZApp.of(context)?.setLocale(const Locale('en', ''));
+    } else {
+      DispatcherZApp.of(context)?.setLocale(const Locale('ja', 'JP'));
+    }
+  }
+
+  // --- ★ここから追加：タブのタイトルを多言語化するヘルパーメソッド ---
+  String _getLocalizedTabTitle(DispatchTab tab, AppLocalizations l10n) {
+    if (tab.isDashboard) {
+      return tab.isAdminDashboard ? l10n.tabDashboardAdmin : l10n.tabDashboardGeneral;
+    } else if (!tab.isReservation && tab.title.contains('新規伝票')) {
+      return l10n.tabNewDispatch;
+    }
+    return tab.title; // 「山田 様 (入力中)」などの動的なタイトルはそのまま表示
   }
 
   // Build the reservation list sidebar
@@ -923,6 +958,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
   Widget _buildReservationList(String mode) {
     final isDark = mode == 'dark';
     final isColor = mode == 'color';
+    final l10n = AppLocalizations.of(context)!; // ★辞書を追加
 
     Color headerBg = isColor ? Colors.redAccent : (isDark ? Colors.grey[800]! : Colors.grey[200]!);
     Color headerText = isColor ? Colors.white : (isDark ? Colors.white : Colors.black);
@@ -942,7 +978,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
               children: [
                 Expanded(
                   child: Text(
-                    '予約リスト (未手配)', 
+                    l10n.reservationListTitle, // ★辞書に変更
                     style: TextStyle(color: headerText, fontWeight: FontWeight.bold, fontSize: 16),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -950,7 +986,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                 IconButton(
                   icon: Icon(Icons.refresh, color: headerText, size: 20),
                   onPressed: _fetchReservations,
-                  tooltip: '予約リストを更新',
+                  tooltip: l10n.tooltipRefresh, // ★辞書に変更
                 )
               ],
             ),
@@ -959,7 +995,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
             child: _isLoadingReservations && _reservations.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : _reservations.isEmpty
-                ? Center(child: Text('待機中の予約はありません', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)))
+                ? Center(child: Text(l10n.noWaitingReservations, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54))) // ★辞書に変更
                 : Scrollbar(
                     controller: _reservationScrollController,
                     thumbVisibility: true, 
@@ -1044,6 +1080,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     if (_tabController.index >= 0 && _tabController.index < _tabs.length) {
       isCurrentTabDashboard = _tabs[_tabController.index].isDashboard;
     }
+
+    final l10n = AppLocalizations.of(context)!; // ★ここにこの1行を追加！
 
     return ValueListenableBuilder<String>(
       valueListenable: LayoutSettings.themeModeNotifier,
@@ -1159,7 +1197,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                                       alignment: Alignment.center,
                                       child: Text(
-                                        tab.title,
+                                        _getLocalizedTabTitle(tab, l10n), // ★ここを書き換え
                                         style: TextStyle(
                                           color: textColor,
                                           fontWeight: (tab.isReservation || tab.isDashboard) ? FontWeight.bold : FontWeight.normal,
@@ -1180,7 +1218,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                         ),
                         alignment: Alignment.center,
                         child: PopupMenuButton<int>(
-                          tooltip: '開いているタブの一覧を表示',
+                          tooltip: l10n.tooltipTabList, // ★辞書に変更！
                           padding: EdgeInsets.zero,
                           icon: Icon(Icons.format_list_bulleted, color: isDark ? Colors.white54 : Colors.grey, size: 22),
                           offset: const Offset(0, 40),
@@ -1200,16 +1238,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                                 value: entry.key,
                                 child: Row(
                                   children: [
-                                    Icon(iconData, size: 16, color: iconColor),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      entry.value.title.trim(),
-                                      style: TextStyle(
-                                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                        color: isSelected ? (isColor ? Colors.blueAccent : (isDark ? Colors.white : Colors.black)) : (isDark ? Colors.white70 : Colors.black87),
-                                      ),
-                                    ),
-                                  ],
+                                        Icon(iconData, size: 16, color: iconColor),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _getLocalizedTabTitle(entry.value, l10n).trim(), // ★ここを書き換え
+                                          style: TextStyle(
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                            color: isSelected ? (isColor ? Colors.blueAccent : (isDark ? Colors.white : Colors.black)) : (isDark ? Colors.white70 : Colors.black87),
+                                          ),
+                                        ),
+                                      ],
                                 ),
                               );
                             }).toList();
@@ -1344,8 +1382,10 @@ class _AppMenuBarState extends State<AppMenuBar> {
     });
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!; // ★この1行を追加！
+
     return ValueListenableBuilder<String>(
       valueListenable: LayoutSettings.themeModeNotifier,
       builder: (context, mode, child) {
@@ -1362,11 +1402,12 @@ class _AppMenuBarState extends State<AppMenuBar> {
               padding: MaterialStatePropertyAll(EdgeInsets.zero),
             ),
             children: [
+              // --- ファイルメニュー ---
               SubmenuButton(
                 menuChildren: [
                   MenuItemButton(
                     onPressed: widget.onNewPressed,
-                    child: const Text('新規伝票を作成'),
+                    child: Text(l10n.newDispatch), // 辞書から呼び出し
                   ),
                   MenuItemButton(
                     onPressed: () {
@@ -1376,14 +1417,16 @@ class _AppMenuBarState extends State<AppMenuBar> {
                         CloseTabNotification().dispatch(context);
                       }
                     },
-                    child: const Text('伝票を閉じる'),
+                    child: Text(l10n.closeDispatch), // 辞書から呼び出し
                   ),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('ファイル', style: TextStyle(color: menuTextColor)),
+                  child: Text(l10n.fileMenu, style: TextStyle(color: menuTextColor)), // 辞書から呼び出し
                 ),
               ),
+
+              // --- 表示メニュー ---
               SubmenuButton(
                 menuChildren: [
                   CheckboxMenuButton(
@@ -1391,14 +1434,14 @@ class _AppMenuBarState extends State<AppMenuBar> {
                     onChanged: (bool? value) {
                       widget.onToggleReservationList();
                     },
-                    child: const Text('予約リスト'),
+                    child: Text(l10n.reservationList), // 辞書から呼び出し
                   ),
                   CheckboxMenuButton(
                     value: widget.isDashboardOpen,
                     onChanged: (bool? value) {
                       widget.onToggleDispatcherView();
                     },
-                    child: const Text('履歴・予約一覧 (一般)'),
+                    child: Text(l10n.dashboardGeneral), // 辞書から呼び出し
                   ),
                   const PopupMenuDivider(),
                   CheckboxMenuButton(
@@ -1406,14 +1449,16 @@ class _AppMenuBarState extends State<AppMenuBar> {
                     onChanged: (bool? value) {
                       widget.onToggleAdminDispatcherView();
                     },
-                    child: const Text('履歴・予約一覧 (管理者)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: Text(l10n.dashboardAdmin, style: const TextStyle(fontWeight: FontWeight.bold)), // 辞書から呼び出し
                   ),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('表示', style: TextStyle(color: menuTextColor)),
+                  child: Text(l10n.viewMenu, style: TextStyle(color: menuTextColor)), // 辞書から呼び出し
                 ),
               ),
+
+              // --- 設定メニュー ---
               SubmenuButton(
                 menuChildren: [
                   SubmenuButton(
@@ -1427,7 +1472,7 @@ class _AppMenuBarState extends State<AppMenuBar> {
                             LayoutSettings.save('default'); 
                           }
                         },
-                        child: const Text('ライトモード'),
+                        child: Text(l10n.lightMode), // 辞書から呼び出し
                       ),
                       RadioMenuButton<String>(
                         value: 'dark',
@@ -1438,7 +1483,7 @@ class _AppMenuBarState extends State<AppMenuBar> {
                             LayoutSettings.save('default'); 
                           }
                         },
-                        child: const Text('ダークモード'),
+                        child: Text(l10n.darkMode), // 辞書から呼び出し
                       ),
                       RadioMenuButton<String>(
                         value: 'color',
@@ -1449,10 +1494,10 @@ class _AppMenuBarState extends State<AppMenuBar> {
                             LayoutSettings.save('default'); 
                           }
                         },
-                        child: const Text('カラーモード'),
+                        child: Text(l10n.colorMode), // 辞書から呼び出し
                       ),
                     ],
-                    child: const Text('モード変更'),
+                    child: Text(l10n.modeChangeMenu), // 辞書から呼び出し
                   ),
                   const PopupMenuDivider(),
                   MenuItemButton(
@@ -1462,18 +1507,19 @@ class _AppMenuBarState extends State<AppMenuBar> {
                         _refreshProfiles(); 
                       }
                     },
-                    child: const Text('画面の保存／削除'),
+                    child: Text(l10n.saveDeleteLayout), // 辞書から呼び出し
                   ),
                   SubmenuButton(
                     menuChildren: _savedProfiles.isEmpty
-                        ? [const MenuItemButton(child: Text('保存された画面はありません', style: TextStyle(color: Colors.grey)))]
+                        ? [MenuItemButton(child: Text(l10n.noSavedLayouts, style: const TextStyle(color: Colors.grey)))] // 辞書から呼び出し
                         : _savedProfiles.map((profile) => MenuItemButton(
                               onPressed: () async {
                                 await LayoutSettings.load(profile);
                                 widget.onLayoutLoaded(); 
                                 if (context.mounted) {
+                                  // ※スナックバーの多言語化を行いました
                                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                    content: Text('レイアウト「$profile」を読み込みました。', style: const TextStyle(fontWeight: FontWeight.bold)), 
+                                    content: Text(l10n.layoutLoadedMsg(profile), style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書に変更し、変数profileを渡す！
                                     backgroundColor: isDark ? Colors.white : Colors.black,
                                     behavior: SnackBarBehavior.floating,
                                   ));
@@ -1481,33 +1527,61 @@ class _AppMenuBarState extends State<AppMenuBar> {
                               },
                               child: Text(profile),
                             )).toList(),
-                    child: const Text('保存した画面を読み込む'),
+                    child: Text(l10n.loadSavedLayout), // 辞書から呼び出し
                   ),
                   const PopupMenuDivider(),
                   MenuItemButton(
                     onPressed: widget.onChangePinPressed,
-                    child: const Text('管理者PINの変更'),
+                    child: Text(l10n.changeAdminPin), // 辞書から呼び出し
                   ),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('設定', style: TextStyle(color: menuTextColor)),
+                  child: Text(l10n.settingsMenu, style: TextStyle(color: menuTextColor)), // 辞書から呼び出し
                 ),
               ),
+
+              // --- ヘルプメニュー ---
               SubmenuButton(
                 menuChildren: [
                   MenuItemButton(
                     onPressed: widget.onShowAboutDialog, 
-                    child: const Text('dispatcherZについて')
+                    child: Text(l10n.aboutApp) // 辞書から呼び出し
                   ),
                   MenuItemButton(
                     onPressed: widget.onRequestExit, 
-                    child: const Text('配車業務の終了'),
+                    child: Text(l10n.exitApp), // 辞書から呼び出し
                   ),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('ヘルプ', style: TextStyle(color: menuTextColor)),
+                  child: Text(l10n.helpMenu, style: TextStyle(color: menuTextColor)), // 辞書から呼び出し
+                ),
+              ),
+
+              // --- Language メニュー ---
+              SubmenuButton(
+                menuChildren: [
+                  MenuItemButton(
+                    onPressed: () {
+                      LayoutSettings.currentLanguage = 'ja'; // ★裏側のシステムに「日本語」を記憶
+                      LayoutSettings.save('default'); // ★設定を保存
+                      DispatcherZApp.of(context)?.setLocale(const Locale('ja', 'JP'));
+                    },
+                    child: const Text('Japanese (日本語)'), 
+                  ),
+                  MenuItemButton(
+                    onPressed: () {
+                      LayoutSettings.currentLanguage = 'en'; // ★裏側のシステムに「英語」を記憶
+                      LayoutSettings.save('default'); // ★設定を保存
+                      DispatcherZApp.of(context)?.setLocale(const Locale('en', ''));
+                    },
+                    child: const Text('English (英語)'), 
+                  ),
+                ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text('Language', style: TextStyle(color: menuTextColor)), // 万国共通の固定テキスト
                 ),
               ),
             ],
@@ -1517,7 +1591,6 @@ class _AppMenuBarState extends State<AppMenuBar> {
     );
   }
 }
-
 // ============================================================================
 // Module: DispatchForm
 // Description: The primary input form for creating and updating dispatch records.
@@ -1561,10 +1634,10 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
   String? _currentRecordId;
   bool _isSaving = false; 
 
-  final List<String> _months = List.generate(12, (i) => '${i + 1}月');
-  final List<String> _days = List.generate(31, (i) => '${i + 1}日');
-  final List<String> _hours = List.generate(24, (i) => '${i}時');
-  final List<String> _minutes = List.generate(12, (i) => '${(i * 5).toString().padLeft(2, '0')}分');
+  final List<String> _months = List.generate(12, (i) => (i + 1).toString());
+  final List<String> _days = List.generate(31, (i) => (i + 1).toString());
+  final List<String> _hours = List.generate(24, (i) => i.toString());
+  final List<String> _minutes = List.generate(12, (i) => (i * 5).toString().padLeft(2, '0'));
 
   String? _selectedMonth;
   String? _selectedDay;
@@ -1660,15 +1733,15 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
       }
     }
 
-    _selectedMonth = '${dispatchTime.month}月';
-    _selectedDay = '${dispatchTime.day}日';
-    _selectedHour = '${dispatchTime.hour}時';
-    _selectedMinute = '${dispatchTime.minute.toString().padLeft(2, '0')}分';
+    _selectedMonth = dispatchTime.month.toString();
+    _selectedDay = dispatchTime.day.toString();
+    _selectedHour = dispatchTime.hour.toString();
+    _selectedMinute = dispatchTime.minute.toString().padLeft(2, '0');
 
-    _completedMonth = '${completionTime.month}月';
-    _completedDay = '${completionTime.day}日';
-    _completedHour = '${completionTime.hour}時';
-    _completedMinute = '${completionTime.minute.toString().padLeft(2, '0')}分';
+    _completedMonth = completionTime.month.toString();
+    _completedDay = completionTime.day.toString();
+    _completedHour = completionTime.hour.toString();
+    _completedMinute = completionTime.minute.toString().padLeft(2, '0');
   }
 
   @override
@@ -1736,6 +1809,10 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
   // Search customer history in MySQL via Laravel API based on phone number
   // 電話番号を基にLaravel API経由でMySQL内の顧客履歴を検索する
   Future<void> _searchCustomerByPhone() async {
+    // ==========================================
+    // ★ここです！この部屋（関数）にも辞書を持ち込む！
+    final l10n = AppLocalizations.of(context)!;
+    // ==========================================
     final phone = _phoneController.text.trim();
     if (phone.isEmpty) return;
 
@@ -1768,12 +1845,12 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
           }
         });
 
-        UpdateTabTitleNotification('　${data['customer_name']} (入力中)　').dispatch(context);
+        UpdateTabTitleNotification(l10n.tabEditingCustomer(data['customer_name'].toString())).dispatch(context);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('過去の履歴から顧客情報を読み込みました。', style: TextStyle(fontWeight: FontWeight.bold)), 
+            SnackBar(
+              content: Text(l10n.snackCustomerFound, style: TextStyle(fontWeight: FontWeight.bold)), 
               backgroundColor: Colors.blueAccent
             ),
           );
@@ -1781,14 +1858,14 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('新規のお客様です。該当する電話番号の履歴はありません。')),
+            SnackBar(content: Text(l10n.snackCustomerNotFound)),
           );
         }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('通信エラーが発生しました。'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text(l10n.commError), backgroundColor: Colors.redAccent),
         );
       }
     }
@@ -1801,9 +1878,11 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
   // Submit form data to Laravel API (Create or Update)
   // フォームのデータをLaravel APIに送信する（作成または更新）
   Future<bool> _submitDataAndSync(BuildContext ctx) async {
+    final l10n = AppLocalizations.of(ctx)!; 
+
     if (_phoneController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
-        content: Text('電話番号は必須項目です。数値を入力してください。', style: TextStyle(fontWeight: FontWeight.bold)), 
+      ScaffoldMessenger.of(ctx).showSnackBar(SnackBar( 
+        content: Text(l10n.errorPhoneRequired, style: const TextStyle(fontWeight: FontWeight.bold)), 
         backgroundColor: Colors.redAccent
       ));
       return false; 
@@ -1811,16 +1890,37 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
 
     setState(() => _isSaving = true);
     
-    String dM = _selectedMonth?.replaceAll('月', '').padLeft(2, '0') ?? '01';
-    String dD = _selectedDay?.replaceAll('日', '').padLeft(2, '0') ?? '01';
-    String dH = _selectedHour?.replaceAll('時', '').padLeft(2, '0') ?? '00';
-    String dMin = _selectedMinute?.replaceAll('分', '').padLeft(2, '0') ?? '00';
+    // =================================================================
+    // ★追加：保存直前に「電話番号のサイレント重複チェック」を行う
+    // =================================================================
+    try {
+      final phone = _phoneController.text.trim();
+      final searchUrl = Uri.parse('http://127.0.0.1:8000/api/customers/search?phone=$phone');
+      final searchRes = await http.get(searchUrl);
+
+      if (searchRes.statusCode == 200) {
+        final searchData = json.decode(searchRes.body);
+        if (searchData['customer_number'] != null) {
+          // データベースに同じ電話番号が存在する場合、
+          // ランダム生成された仮のIDを破棄して、既存の顧客番号に書き換える！
+          _customerNumberController.text = searchData['customer_number'].toString();
+        }
+      }
+    } catch (e) {
+      // APIに繋がらない等の通信エラー時は無視して、そのまま保存処理へ進む
+    }
+    // =================================================================
+
+    String dM = _selectedMonth?.padLeft(2, '0') ?? '01';
+    String dD = _selectedDay?.padLeft(2, '0') ?? '01';
+    String dH = _selectedHour?.padLeft(2, '0') ?? '00';
+    String dMin = _selectedMinute?.padLeft(2, '0') ?? '00';
     String dispatchTimeStr = '${DateTime.now().year}-$dM-$dD $dH:$dMin:00';
 
-    String cM = _completedMonth?.replaceAll('月', '').padLeft(2, '0') ?? '01';
-    String cD = _completedDay?.replaceAll('日', '').padLeft(2, '0') ?? '01';
-    String cH = _completedHour?.replaceAll('時', '').padLeft(2, '0') ?? '00';
-    String cMin = _completedMinute?.replaceAll('分', '').padLeft(2, '0') ?? '00';
+    String cM = _completedMonth?.padLeft(2, '0') ?? '01';
+    String cD = _completedDay?.padLeft(2, '0') ?? '01';
+    String cH = _completedHour?.padLeft(2, '0') ?? '00';
+    String cMin = _completedMinute?.padLeft(2, '0') ?? '00';
     String completionTimeStr = '${DateTime.now().year}-$cM-$cD $cH:$cMin:00';
 
     String destStatus = _destinationController.text.trim().isNotEmpty ? '配車完了' : '未手配';
@@ -1880,7 +1980,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
     
     String displayName = _nameController.text.trim();
     String tabTitle = displayName.isNotEmpty ? displayName : '伝票 (#$_currentRecordId)';
-    UpdateTabTitleNotification('　$tabTitle (保存済)　').dispatch(ctx);
+    UpdateTabTitleNotification(l10n.tabSavedDispatch(tabTitle)).dispatch(ctx);
     
     setState(() => _isSaving = false);
     return true; 
@@ -1890,6 +1990,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
   Widget _buildSearchableLocationField(String label, TextEditingController controller, String fieldKey, bool isDark, bool isColor) {
     final bool isThisLoading = _loadingField == fieldKey;
     Color iconColor = isColor ? Colors.redAccent : (isDark ? Colors.white70 : Colors.black87);
+    final l10n = AppLocalizations.of(context)!; // 辞書を読み込み
 
     return Row(
       children: [
@@ -1906,18 +2007,19 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
           icon: isThisLoading 
               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
               : Icon(Icons.location_on, color: iconColor),
-          tooltip: '地図を検索して座標を記憶',
+          tooltip: l10n.searchMapTooltip, // ★辞書から呼び出し
           onPressed: _loadingField != null ? null : () => _searchAddress(controller, fieldKey),
         ),
       ],
     );
   }
 
-  @override
+@override
   Widget build(BuildContext context) {
     super.build(context); 
     final formContext = context; 
     final screenWidth = MediaQuery.of(context).size.width;
+    final l10n = AppLocalizations.of(context)!; // ★辞書を読み込み
 
     return ValueListenableBuilder<String>(
       valueListenable: LayoutSettings.themeModeNotifier,
@@ -1959,8 +2061,8 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                           TextFormField(
                             controller: _customerNumberController,
                             readOnly: true, 
-                            decoration: const InputDecoration(
-                              labelText: '顧客番号 (自動生成)',
+                            decoration: InputDecoration(
+                              labelText: l10n.customerNumberAuto, // ★辞書
                               filled: false, 
                             ),
                             style: TextStyle(
@@ -1968,7 +2070,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                             ),
                           ),
                           const SizedBox(height: 8),
-                          _buildTextField('顧客名', controller: _nameController, maxLength: 64),
+                          _buildTextField(l10n.customerName, controller: _nameController, maxLength: 64), // ★辞書
                           const SizedBox(height: 8),
                           
                           Row(
@@ -1981,9 +2083,9 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                     FilteringTextInputFormatter.digitsOnly,
                                     LengthLimitingTextInputFormatter(20),
                                   ],
-                                  decoration: const InputDecoration(
-                                    labelText: '電話番号 (必須)',
-                                    hintText: 'ハイフンなしで入力し、Enterで顧客情報を検索',
+                                  decoration: InputDecoration(
+                                    labelText: l10n.phoneNumberRequired, // ★辞書
+                                    hintText: l10n.phoneHint, // ★辞書
                                   ),
                                   onFieldSubmitted: (_) => _searchCustomerByPhone(),
                                 ),
@@ -1991,7 +2093,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                               const SizedBox(width: 8),
                               IconButton(
                                 icon: Icon(Icons.search, color: searchIconColor),
-                                tooltip: '電話番号から顧客を検索',
+                                tooltip: l10n.tooltipSearchCustomer, // ★辞書に変更！
                                 onPressed: _searchCustomerByPhone,
                               ),
                             ],
@@ -1999,52 +2101,68 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                           
                           const Divider(height: 20),
                           
-                          _buildSearchableLocationField('配車場所１', _loc1Controller, 'loc1', isDark, isColor),
+                          _buildSearchableLocationField(l10n.pickupLocation1, _loc1Controller, 'loc1', isDark, isColor), // ★辞書
                           const SizedBox(height: 8),
-                          _buildSearchableLocationField('配車場所２', _loc2Controller, 'loc2', isDark, isColor),
+                          _buildSearchableLocationField(l10n.pickupLocation2, _loc2Controller, 'loc2', isDark, isColor), // ★辞書
                           const SizedBox(height: 8),
-                          _buildSearchableLocationField('配車場所３', _loc3Controller, 'loc3', isDark, isColor),
+                          _buildSearchableLocationField(l10n.pickupLocation3, _loc3Controller, 'loc3', isDark, isColor), // ★辞書
                           
                           const Divider(height: 20),
 
-                          Text('配車日時', style: TextStyle(fontSize: 12, color: subTextCol)),
+                          Text(l10n.dispatchDateTime, style: TextStyle(fontSize: 12, color: subTextCol)), // ★辞書
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              _buildStatefulDropdown('月', _months, _selectedMonth, (val) => setState(() => _selectedMonth = val)),
+                              _buildStatefulDropdown(_months, _selectedMonth, (val) => setState(() => _selectedMonth = val)),
+                              const SizedBox(width: 4),
+                              Text(l10n.monthLabel, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
                               const SizedBox(width: 8),
-                              _buildStatefulDropdown('日', _days, _selectedDay, (val) => setState(() => _selectedDay = val)),
+                              _buildStatefulDropdown(_days, _selectedDay, (val) => setState(() => _selectedDay = val)),
+                              const SizedBox(width: 4),
+                              Text(l10n.dayLabel, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
                               const SizedBox(width: 8),
-                              _buildStatefulDropdown('時', _hours, _selectedHour, (val) => setState(() => _selectedHour = val)),
+                              _buildStatefulDropdown(_hours, _selectedHour, (val) => setState(() => _selectedHour = val)),
+                              const SizedBox(width: 4),
+                              Text(l10n.hourLabel, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
                               const SizedBox(width: 8),
-                              _buildStatefulDropdown('分', _minutes, _selectedMinute, (val) => setState(() => _selectedMinute = val)),
+                              _buildStatefulDropdown(_minutes, _selectedMinute, (val) => setState(() => _selectedMinute = val)),
+                              const SizedBox(width: 4),
+                              Text(l10n.minuteLabel, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
                             ],
                           ),
                           const SizedBox(height: 16),
                           
-                          Text('配車完了日時', style: TextStyle(fontSize: 12, color: subTextCol)),
+                          Text(l10n.completionDateTime, style: TextStyle(fontSize: 12, color: subTextCol)), // ★辞書
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              _buildStatefulDropdown('月', _months, _completedMonth, (val) => setState(() => _completedMonth = val)),
+                              _buildStatefulDropdown(_months, _completedMonth, (val) => setState(() => _completedMonth = val)),
+                              const SizedBox(width: 4),
+                              Text(l10n.monthLabel, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
                               const SizedBox(width: 8),
-                              _buildStatefulDropdown('日', _days, _completedDay, (val) => setState(() => _completedDay = val)),
+                              _buildStatefulDropdown(_days, _completedDay, (val) => setState(() => _completedDay = val)),
+                              const SizedBox(width: 4),
+                              Text(l10n.dayLabel, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
                               const SizedBox(width: 8),
-                              _buildStatefulDropdown('時', _hours, _completedHour, (val) => setState(() => _completedHour = val)),
+                              _buildStatefulDropdown(_hours, _completedHour, (val) => setState(() => _completedHour = val)),
+                              const SizedBox(width: 4),
+                              Text(l10n.hourLabel, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
                               const SizedBox(width: 8),
-                              _buildStatefulDropdown('分', _minutes, _completedMinute, (val) => setState(() => _completedMinute = val)),
+                              _buildStatefulDropdown(_minutes, _completedMinute, (val) => setState(() => _completedMinute = val)),
+                              const SizedBox(width: 4),
+                              Text(l10n.minuteLabel, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
                             ],
                           ),
                           const Divider(height: 20),
 
-                          _buildTextField('呼び出し (無線コールエリア)', maxLines: 2, controller: _callAreaController, maxLength: 128),
+                          _buildTextField(l10n.callArea, maxLines: 2, controller: _callAreaController, maxLength: 128), // ★辞書
                           const SizedBox(height: 8),
-                          _buildTextField('誘導先 (移動局への誘導案内)', maxLines: 4, controller: _guidanceController, maxLength: 512),
+                          _buildTextField(l10n.guidance, maxLines: 4, controller: _guidanceController, maxLength: 512), // ★辞書
                           const SizedBox(height: 8),
                           
-                          _buildTextField('配車先 (移動局の番号)', maxLines: 2, controller: _destinationController, maxLength: 128),
+                          _buildTextField(l10n.destination, maxLines: 2, controller: _destinationController, maxLength: 128), // ★辞書
                           const SizedBox(height: 8),
-                          _buildTextField('Primary', maxLines: 3, controller: _primaryController, maxLength: 256),
+                          _buildTextField('Primary', maxLines: 3, controller: _primaryController, maxLength: 256), // 固有名詞なのでそのまま
                           
                           const SizedBox(height: 10),
                           Wrap(
@@ -2064,7 +2182,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                 },
                                 child: _isSaving 
                                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                    : Text(isSaved ? '変更を再保存' : 'データ保存 / 完了', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    : Text(isSaved ? l10n.resaveChanges : l10n.saveComplete, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
                               ),
                               
                               OutlinedButton(
@@ -2083,12 +2201,12 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                       return StatefulBuilder(
                                         builder: (context, setDialogState) {
                                           return AlertDialog(
-                                            title: const Text('伝票を閉じますか？', style: TextStyle(fontWeight: FontWeight.bold)),
-                                            content: const Text('必要であれば保存してから閉じてください。'),
+                                            title: Text(l10n.closeDispatchConfirmTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
+                                            content: Text(l10n.closeDispatchConfirmContent), // ★辞書
                                             actions: [
                                               TextButton(
                                                 onPressed: () => Navigator.of(dialogContext).pop(),
-                                                child: Text('キャンセル', style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+                                                child: Text(l10n.cancelButton, style: TextStyle(color: isDark ? Colors.white : Colors.black)), // ★辞書
                                               ),
                                               ElevatedButton(
                                                 style: ElevatedButton.styleFrom(
@@ -2108,7 +2226,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                                 },
                                                 child: isDialogSaving 
                                                     ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                                                    : (isDialogSaved ? const Text('保存済み') : const Text('保存する')),
+                                                    : (isDialogSaved ? Text(l10n.savedButton) : Text(l10n.saveButton)), // ★辞書
                                               ),
                                               ElevatedButton(
                                                 style: ElevatedButton.styleFrom(
@@ -2119,7 +2237,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                                   Navigator.of(dialogContext).pop();
                                                   CloseTabNotification().dispatch(formContext); 
                                                 },
-                                                child: const Text('閉じる'),
+                                                child: Text(l10n.closeButton), // ★辞書
                                               ),
                                             ],
                                           );
@@ -2128,7 +2246,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                     },
                                   );
                                 },
-                                child: const Text('閉じる'),
+                                child: Text(l10n.closeButton), // ★辞書
                               ),
                             ],
                           ),
@@ -2207,7 +2325,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                             _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1.0);
                           },
                           icon: const Icon(Icons.zoom_in),
-                          label: const Text('地図を拡大', style: TextStyle(fontWeight: FontWeight.bold)),
+                          label: Text(l10n.zoomIn, style: const TextStyle(fontWeight: FontWeight.bold)), // ★constを外し、辞書に変更！
                         ),
                         const SizedBox(width: 32),
                         ElevatedButton.icon(
@@ -2220,7 +2338,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                             _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1.0);
                           },
                           icon: const Icon(Icons.zoom_out),
-                          label: const Text('地図を縮小', style: TextStyle(fontWeight: FontWeight.bold)),
+                          label: Text(l10n.zoomOut, style: const TextStyle(fontWeight: FontWeight.bold)), // ★constを外し、辞書に変更！
                         ),
                       ],
                     ),
@@ -2244,12 +2362,11 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
   }
 
   Widget _buildStatefulDropdown(
-      String hint, List<String> items, String? value, ValueChanged<String?> onChanged) {
+      List<String> items, String? value, ValueChanged<String?> onChanged) {
     return Expanded(
       child: DropdownButtonFormField<String>(
         isExpanded: true, 
         decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 8)),
-        hint: Text(hint),
         value: value, 
         items: items.map((String val) => DropdownMenuItem<String>(value: val, child: Text(val))).toList(),
         onChanged: onChanged, 
@@ -2282,7 +2399,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
   
   DateTimeRange? _dateRange;
 
-  String _selectedFilter = 'すべて';
+  String _selectedFilter = 'all'; // ★内部判定用のキーワード（英語）に変更
 
   String? _sortColumn;
   bool _sortAscending = true;
@@ -2392,6 +2509,10 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
   // Update the status of a specific dispatch record via API
   // 特定の配車記録のステータスをAPI経由で更新する
   Future<void> _updateDispatchStatus(String id, String newStatus) async {
+    // ==========================================
+    // ★ここです！この部屋（関数）にも辞書を持ち込む！
+    final l10n = AppLocalizations.of(context)!;
+    // ==========================================
     try {
       await http.put(
         Uri.parse('http://127.0.0.1:8000/api/dispatches/$id'),
@@ -2404,13 +2525,15 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
       
       if (mounted) {
         Color msgColor = Colors.blueGrey;
-        if (newStatus == 'キャンセル') msgColor = Colors.orange;
-        if (newStatus == '配車完了') msgColor = Colors.green;
-        
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('伝票 #$id を「$newStatus」に変更しました。'), backgroundColor: msgColor));
+        String localizedStatus = newStatus;
+        if (newStatus == '未手配') localizedStatus = l10n.statusReserved;
+        if (newStatus == '配車完了') localizedStatus = l10n.statusCompleted;
+        if (newStatus == 'キャンセル') localizedStatus = l10n.statusCanceled;
+
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackStatusChanged(id, localizedStatus)), backgroundColor: msgColor));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('ステータス変更に失敗しました。'), backgroundColor: Colors.red));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackStatusChangeFailed), backgroundColor: Colors.red));
     }
   }
 
@@ -2418,17 +2541,18 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
   // 管理者がステータスを手動変更するためのダイアログを表示する
   void _showAdminActionDialog(Map<String, dynamic> row) {
     if (!widget.isAdmin) return;
+    final l10n = AppLocalizations.of(context)!; // ★ここに追加！
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text('ステータス変更: #${row['id']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-          content: Text('伝票（${row['name']} 様）の新しいステータスを選んでください。'),
+          title: Text(l10n.dialogStatusChangeTitle(row['id'].toString()), style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Text(l10n.dialogStatusChangeContent(row['name'].toString())),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('戻る'),
+              child: Text(l10n.backButton),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white),
@@ -2459,7 +2583,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                   'raw_data': row['raw_data'],
                 }).dispatch(context);
               },
-              child: const Text('予約配車に戻す'),
+              child: Text(l10n.revertReservationBtn),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
@@ -2467,7 +2591,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                 Navigator.pop(dialogContext);
                 _updateDispatchStatus(row['id'], '配車完了');
               },
-              child: const Text('配車完了'),
+              child: Text(l10n.statusCompleted), //既存辞書再利用
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
@@ -2475,7 +2599,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                 Navigator.pop(dialogContext);
                 _updateDispatchStatus(row['id'], 'キャンセル');
               },
-              child: const Text('キャンセル'),
+              child: Text(l10n.cancelButton), //既存辞書再利用
             ),
           ],
         );
@@ -2486,6 +2610,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
   // Export current dashboard view to a local CSV file
   // 現在のダッシュボード表示をローカルのCSVファイルにエクスポートする
   Future<void> _exportCsv(List<Map<String, dynamic>> filteredData) async {
+    final l10n = AppLocalizations.of(context)!; // ★ここに追加！
     try {
       StringBuffer sb = StringBuffer();
       sb.write('\uFEFF');
@@ -2534,7 +2659,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('CSVを出力しました:\n${file.absolute.path}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Text(l10n.snackCsvExportSuccess(file.absolute.path), style: const TextStyle(fontWeight: FontWeight.bold)),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 5),
         ));
@@ -2542,7 +2667,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('CSVの出力に失敗しました: $e'),
+          content: Text(l10n.snackCsvExportFailed(e.toString())),
           backgroundColor: Colors.redAccent,
         ));
       }
@@ -2552,6 +2677,10 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
   // Import local CSV file and send to Laravel API for processing (Upsert)
   // ローカルのCSVファイルをインポートし、Laravel APIに送信して処理（アップサート）する
   Future<void> _importCsv() async {
+    // ==========================================
+    // ★ここです！この部屋（関数）にも辞書を持ち込む！
+    final l10n = AppLocalizations.of(context)!;
+    // ==========================================
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -2575,16 +2704,16 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
         if (response.statusCode == 200) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('CSVデータのインポートに成功しました！', style: TextStyle(fontWeight: FontWeight.bold)),
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(l10n.snackCsvImportSuccess, style: TextStyle(fontWeight: FontWeight.bold)),
               backgroundColor: Colors.green,
             ));
           }
           _fetchData(); 
         } else {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-              content: Text('インポートに失敗しました。ファイル形式を確認してください。'),
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(l10n.snackCsvImportFailed),
               backgroundColor: Colors.redAccent,
             ));
           }
@@ -2595,7 +2724,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('エラーが発生しました: $e'),
+          content: Text(l10n.snackErrorOccurred(e.toString())),
           backgroundColor: Colors.redAccent,
         ));
       }
@@ -2620,24 +2749,26 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
   Widget _buildStatusBadge(int status, String mode) {
     bool isDark = mode == 'dark';
     bool isColor = mode == 'color';
+    final l10n = AppLocalizations.of(context)!; // ★辞書を追加
+
     Color baseColor;
     String label;
     switch (status) {
       case 0:
         baseColor = isColor ? Colors.blueAccent : (isDark ? Colors.white70 : Colors.black87);
-        label = '予約配車'; 
+        label = l10n.statusReserved; // ★辞書に変更
         break;
       case 1:
         baseColor = isColor ? Colors.green : (isDark ? Colors.white : Colors.black);
-        label = '配車完了';
+        label = l10n.statusCompleted; // ★辞書に変更
         break;
       case 2:
         baseColor = isColor ? Colors.redAccent : (isDark ? Colors.white54 : Colors.black54);
-        label = 'キャンセル';
+        label = l10n.statusCanceled; // ★辞書に変更
         break;
       default:
         baseColor = Colors.grey;
-        label = '不明';
+        label = l10n.statusUnknown; // ★辞書に変更
     }
 
     bool isCompleted = status == 1;
@@ -2749,9 +2880,10 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
           String searchText = _searchController.text.trim();
 
           List<Map<String, dynamic>> filteredData = _allData.where((data) {
-            if (_selectedFilter == '予約配車のみ' && data['status'] != 0) return false; 
-            if (_selectedFilter == '配車完了のみ' && data['status'] != 1) return false;
-            if (_selectedFilter == 'キャンセル' && data['status'] != 2) return false;
+            // ★内部キーワード（英語）で判定するように変更
+            if (_selectedFilter == 'reserved' && data['status'] != 0) return false; 
+            if (_selectedFilter == 'completed' && data['status'] != 1) return false;
+            if (_selectedFilter == 'canceled' && data['status'] != 2) return false;
 
             if (searchText.isNotEmpty) {
               String name = data['name'].toString();
@@ -2800,10 +2932,12 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
           }
 
           double totalTableWidth = _wCustomerNum + _wId + _wDate + _wCompDate + _wStatus + 16 + _wName + _wPhone + _wDest + _wPrimary;
+          
+          final l10n = AppLocalizations.of(context)!; // ★辞書を追加
 
-          String rangeText = '期間指定なし (全件)';
+          String rangeText = l10n.noDateLimit; // ★辞書に変更
           if (_dateRange != null) {
-            rangeText = '期間: ${_dateRange!.start.month}/${_dateRange!.start.day} - ${_dateRange!.end.month}/${_dateRange!.end.day}';
+            rangeText = '${l10n.periodPrefix} ${_dateRange!.start.month}/${_dateRange!.start.day} - ${_dateRange!.end.month}/${_dateRange!.end.day}'; // ★辞書に変更
           }
 
           return Container(
@@ -2817,21 +2951,21 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                     children: [
                       Icon(Icons.dashboard, color: isColor ? Colors.indigo : (isDark ? Colors.white : Colors.black), size: 28),
                       const SizedBox(width: 12),
-                      Text(widget.isAdmin ? '履歴・予約 一元管理ダッシュボード (管理者)' : '履歴・予約 一元管理ダッシュボード', 
+                      Text(widget.isAdmin ? l10n.dashboardTitleAdmin : l10n.dashboardTitleGeneral, // ★辞書に変更
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
                       const Spacer(),
                       
                       if (widget.isAdmin) ...[
                         IconButton(
                           icon: Icon(Icons.upload_file, color: isColor ? Colors.orange : (isDark ? Colors.white : Colors.black)),
-                          tooltip: 'CSVファイルからデータを一括インポート',
+                          tooltip: l10n.tooltipImportCsv, // ★辞書に変更
                           onPressed: _importCsv,
                         ),
                         const SizedBox(width: 8),
 
                         IconButton(
                           icon: Icon(Icons.download, color: isColor ? Colors.green : (isDark ? Colors.white : Colors.black)),
-                          tooltip: '表示中のデータをCSVで出力 (管理者のみ)',
+                          tooltip: l10n.tooltipExportCsv, // ★辞書に変更
                           onPressed: () {
                             _exportCsv(filteredData);
                           },
@@ -2840,19 +2974,19 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                       const SizedBox(width: 8),
 
                       IconButton(
-                        icon: Icon(Icons.refresh, color: isColor ? Colors.blueAccent : (isDark ? Colors.white : Colors.black)),
-                        tooltip: '最新のデータをMySQLから取得',
-                        onPressed: () {
-                          _fetchData(); 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('MySQLからデータを最新に更新しました。')),
-                          );
-                        },
-                      ),
+                          icon: Icon(Icons.refresh, color: isColor ? Colors.blueAccent : (isDark ? Colors.white : Colors.black)),
+                          tooltip: l10n.tooltipRefresh, 
+                          onPressed: () {
+                            _fetchData(); 
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.snackDataRefreshed)), // ★スッキリ直す！
+                            );
+                          },
+                        ),
                       const SizedBox(width: 8),
                       IconButton(
                         icon: Icon(Icons.close, color: isColor ? Colors.redAccent : (isDark ? Colors.red[300] : Colors.red)),
-                        tooltip: 'このダッシュボードタブを閉じる',
+                        tooltip: l10n.tooltipCloseTab, // ★辞書に変更
                         onPressed: () {
                           CloseTabNotification().dispatch(context);
                         },
@@ -2886,6 +3020,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                             icon: const Icon(Icons.calendar_month),
                             label: Text(rangeText),
                             onPressed: () async {
+                              // ... (カレンダー選択処理の中身はそのまま) ...
                               DateTimeRange? picked = await showDateRangePicker(
                                 context: context,
                                 firstDate: DateTime(2024),
@@ -2908,7 +3043,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                                 if (days > maxDays) {
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                      content: Text('⚠️ データベース保護のため、一度に検索できる期間は最大${widget.isAdmin ? '1年間' : '3ヶ月間'}までに制限されています。', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      content: Text(l10n.snackDateRangeLimit(widget.isAdmin ? l10n.limitOneYear : l10n.limitThreeMonths), style: const TextStyle(fontWeight: FontWeight.bold)),
                                       backgroundColor: Colors.redAccent,
                                       duration: const Duration(seconds: 4),
                                     ));
@@ -2928,11 +3063,12 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                               selectedBackgroundColor: isColor ? Colors.blueAccent : (isDark ? Colors.white : Colors.black),
                               selectedForegroundColor: isColor ? Colors.white : (isDark ? Colors.black : Colors.white),
                             ),
-                            segments: const [
-                              ButtonSegment(value: 'すべて', label: SizedBox(width: 110, child: Center(child: Text('すべて')))),
-                              ButtonSegment(value: '予約配車のみ', label: SizedBox(width: 110, child: Center(child: Text('予約配車のみ')))), 
-                              ButtonSegment(value: '配車完了のみ', label: SizedBox(width: 110, child: Center(child: Text('配車完了のみ')))),
-                              ButtonSegment(value: 'キャンセル', label: SizedBox(width: 110, child: Center(child: Text('キャンセル')))),
+                            segments: [
+                              // ★ valueは裏側用の英語、labelは表示用の辞書（l10n）に分離！
+                              ButtonSegment(value: 'all', label: SizedBox(width: 110, child: Center(child: Text(l10n.allFilters)))), 
+                              ButtonSegment(value: 'reserved', label: SizedBox(width: 110, child: Center(child: Text(l10n.reservedOnlyFilter)))), 
+                              ButtonSegment(value: 'completed', label: SizedBox(width: 110, child: Center(child: Text(l10n.completedOnlyFilter)))),
+                              ButtonSegment(value: 'canceled', label: SizedBox(width: 110, child: Center(child: Text(l10n.cancelFilter)))),
                             ],
                             selected: {_selectedFilter},
                             onSelectionChanged: (Set<String> newSelection) {
@@ -2951,7 +3087,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                             setState(() {}); 
                           },
                           decoration: InputDecoration(
-                            hintText: '電話番号、名前で検索...',
+                            hintText: l10n.searchHint, // ★辞書に変更
                             prefixIcon: const Icon(Icons.search),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                             isDense: true,
@@ -2989,15 +3125,16 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                               ),
                               child: Row(
                                 children: [
-                                  _buildResizableHeader('顧客番号', 'customer_number', _wCustomerNum, (w) => setState(() => _wCustomerNum = w), isDark),
-                                  _buildResizableHeader('伝票ID', 'id', _wId, (w) => setState(() => _wId = w), isDark),
-                                  _buildResizableHeader('配車日時', 'datetime', _wDate, (w) => setState(() => _wDate = w), isDark),
-                                  _buildResizableHeader('配車完了日時', 'comp_datetime', _wCompDate, (w) => setState(() => _wCompDate = w), isDark),
-                                  _buildResizableHeader('ステータス', 'status', _wStatus, (w) => setState(() => _wStatus = w), isDark),
+                                  // ★見出しを辞書に変更
+                                  _buildResizableHeader(l10n.colCustomerNo, 'customer_number', _wCustomerNum, (w) => setState(() => _wCustomerNum = w), isDark),
+                                  _buildResizableHeader(l10n.colDispatchId, 'id', _wId, (w) => setState(() => _wId = w), isDark),
+                                  _buildResizableHeader(l10n.colDispatchDate, 'datetime', _wDate, (w) => setState(() => _wDate = w), isDark),
+                                  _buildResizableHeader(l10n.colCompletionDate, 'comp_datetime', _wCompDate, (w) => setState(() => _wCompDate = w), isDark),
+                                  _buildResizableHeader(l10n.colStatus, 'status', _wStatus, (w) => setState(() => _wStatus = w), isDark),
                                   const SizedBox(width: 16), 
-                                  _buildResizableHeader('顧客名', 'name', _wName, (w) => setState(() => _wName = w), isDark),
-                                  _buildResizableHeader('電話番号', 'phone', _wPhone, (w) => setState(() => _wPhone = w), isDark),
-                                  _buildResizableHeader('移動局', 'destination', _wDest, (w) => setState(() => _wDest = w), isDark),
+                                  _buildResizableHeader(l10n.customerName, 'name', _wName, (w) => setState(() => _wName = w), isDark),
+                                  _buildResizableHeader(l10n.colPhone, 'phone', _wPhone, (w) => setState(() => _wPhone = w), isDark),
+                                  _buildResizableHeader(l10n.colDestination, 'destination', _wDest, (w) => setState(() => _wDest = w), isDark),
                                   _buildResizableHeader('Primary', 'primary', _wPrimary, (w) => setState(() => _wPrimary = w), isDark),
                                 ],
                               ),
