@@ -1,8 +1,11 @@
 # dispatcherZ インストール ＆ 環境構築手順書（Zorin OS編）
 
-**次世代タクシー配車・顧客管理システム**
-Version: 1.0
-OS: Zorin OS (Ubuntu/Debian系 Linux)
+**次世代タクシー配車・顧客管理システム**  
+Version: 1.2  
+OS: Zorin OS (Ubuntu/Debian系 Linux)  
+
+geditからのコマンドは、geditをインストールしないと発動しません。  
+Visual Studio Codeをインストールしている方は、codeからのコマンドでファイルを開くことが可能です。  
 
 ---
 
@@ -143,6 +146,58 @@ python3 cti_monitor.py
 （※実運用時は、このPythonスクリプトがOS起動時に自動で立ち上がるように `systemd` サービス化することをおすすめします。）
 
 ---
+## 【追加設定】 ワンクリック自動起動アイコンの作成（推奨）
+
+dispatcherZを運用する際、毎回ターミナルを開いて「Laravel」「CTI(Python)」「Flutterアプリ」の3つを別々に起動するのは手間がかかります。
+以下の手順で、Zorin OSのデスクトップに「ダブルクリックで全自動起動するアイコン」を作成できます。
+
+### 1. 起動用シェルスクリプトの作成
+ターミナルを開き、ホームディレクトリにスクリプトを作成します。
+`gedit ~/start_dispatcherz.sh`
+
+以下のコードを貼り付けて保存します。（※ `YOUR_LARAVEL_DIR` と `YOUR_PYTHON_DIR` は実際のフォルダ名に合わせてください）
+```bash
+#!/bin/bash
+# 1. Laravel APIの起動
+gnome-terminal --title="Laravel API" -- bash -c "cd ~/YOUR_LARAVEL_DIR && php artisan serve; exec bash"
+
+# 2. CTI着信連携システムの起動
+gnome-terminal --title="CTI Server" -- bash -c "cd ~/YOUR_PYTHON_DIR && python3 your_cti_script.py; exec bash"
+
+sleep 2
+
+# 3. dispatcherZ アプリの起動（パスを読み込むため -ic を使用）
+gnome-terminal --title="dispatcherZ App" -- bash -ic "cd ~/dispatcherz && flutter run -d linux; exec bash"
+```
+
+---
+
+### 2. デスクトップショートカットの作成
+次に、デスクトップにアイコンを作成します。
+gedit ~/デスクトップ/dispatcherz.desktop
+（※英語環境の場合は ~/Desktop/dispatcherz.desktop）
+
+以下を貼り付けて保存します。USER_NAME の部分は必ずご自身のログインユーザー名に変更してください。
+```Ini, TOML
+[Desktop Entry]
+Type=Application
+Name=dispatcherZ
+Comment=配車管理システムの起動
+Exec=/home/USER_NAME/start_dispatcherz.sh
+Icon=utilities-terminal
+Terminal=false
+```
+---
+
+### 3. 実行権限の付与とアイコンの許可
+ターミナルで以下のコマンドを実行し、2つのファイルに実行権限を与えます。
+```bash
+chmod +x ~/start_dispatcherz.sh
+chmod +x ~/デスクトップ/dispatcherz.desktop
+```
+
+最後に、デスクトップにできたアイコンを右クリックし、「許可する（Allow Launching）」 を選択します。
+これで、次回からアイコンをダブルクリックするだけでシステム一式が自動起動します！
 
 ## 🎉 構築完了！
 以上でdispatcherZの実行環境が完全に整いました。

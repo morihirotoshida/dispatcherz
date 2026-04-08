@@ -1,8 +1,9 @@
 // ============================================================================
-// dispatcherZ - Main Application / メインアプリケーション
+// dispatcherZ - Main Application / メインアプリケーション / 메인 애플리케이션
 // 
 // This file contains the complete frontend logic for the dispatcherZ system.
 // このファイルは、dispatcherZシステムの完全なフロントエンドロジックを含んでいます。
+// 이 파일은 dispatcherZ 시스템의 전체 프런트엔드 로직을 포함하고 있습니다.
 // ============================================================================
 
 import 'dart:convert';
@@ -25,15 +26,19 @@ import 'l10n/app_localizations.dart';
 // Description: Manages application layout states, theme settings, and profiles.
 // モジュール: LayoutSettings
 // 説明: アプリケーションのレイアウト状態、テーマ設定、プロファイルを管理します。
+// 모듈: LayoutSettings
+// 설명: 애플리케이션 레이아웃 상태, 테마 설정 및 프로필을 관리합니다.
 // ============================================================================
 class LayoutSettings {
   static bool showReservationList = true; 
   static ValueNotifier<double> reservationListRatioNotifier = ValueNotifier(1 / 6); 
   static ValueNotifier<double> leftFormRatioNotifier = ValueNotifier(1 / 3); 
   static ValueNotifier<String> themeModeNotifier = ValueNotifier('light'); 
-  static String currentLanguage = 'ja'; // ★確認1：この変数はありますか？
+  static String currentLanguage = 'ja'; // ★確認1：この変数はありますか？ / Check 1: Does this variable exist? / 확인1: 이 변수가 있습니까?
 
+  // Load layout profile from local JSON file
   // ローカルのJSONファイルからレイアウトプロファイルを読み込む
+  // 로컬 JSON 파일에서 레이아웃 프로필을 불러옵니다
   static Future<void> load([String profileName = 'default']) async {
     try {
       final file = File('dispatcherz_layout_$profileName.json');
@@ -48,12 +53,14 @@ class LayoutSettings {
         } else if (data.containsKey('isDarkMode')) {
           themeModeNotifier.value = data['isDarkMode'] == true ? 'dark' : 'light';
         }
-        currentLanguage = data['language'] ?? 'ja'; // ★確認2：ここに入っていますか？
+        currentLanguage = data['language'] ?? 'ja'; // ★確認2：ここに入っていますか？ / Check 2: Is it included here? / 확인2: 여기에 포함되어 있습니까?
       }
     } catch (e) {}
   }
 
+  // Save current layout and theme to local JSON file
   // 現在のレイアウトとテーマをローカルのJSONファイルに保存する
+  // 현재 레이아웃과 테마를 로컬 JSON 파일에 저장합니다
   static Future<void> save(String profileName) async {
     try {
       final file = File('dispatcherz_layout_$profileName.json');
@@ -62,7 +69,7 @@ class LayoutSettings {
         'reservationListRatio': reservationListRatioNotifier.value,
         'leftFormRatio': leftFormRatioNotifier.value,
         'themeMode': themeModeNotifier.value, 
-        'language': currentLanguage, // ★確認3：保存するデータに言語が含まれていますか？
+        'language': currentLanguage, // ★確認3：保存するデータに言語が含まれていますか？ / Check 3: Is language included in the data to save? / 확인3: 저장할 데이터에 언어가 포함되어 있습니까?
       };
       await file.writeAsString(jsonEncode(data));
 
@@ -73,6 +80,7 @@ class LayoutSettings {
 
   // Delete a specific layout profile
   // 特定のレイアウトプロファイルを削除する
+  // 특정 레이아웃 프로필을 삭제합니다
   static Future<void> delete(String profileName) async {
     try {
       final file = File('dispatcherz_layout_$profileName.json');
@@ -84,6 +92,7 @@ class LayoutSettings {
 
   // Load the most recently used profile
   // 最後に使用したプロファイルを読み込む
+  // 마지막으로 사용한 프로필을 불러옵니다
   static Future<void> loadLastProfile() async {
     try {
       final lastFile = File('dispatcherz_last_profile.txt');
@@ -100,6 +109,7 @@ class LayoutSettings {
 
   // Retrieve a list of all saved profiles
   // 保存されているすべてのプロファイルのリストを取得する
+  // 저장된 모든 프로필 목록을 가져옵니다
   static Future<List<String>> getSavedProfiles() async {
     List<String> profiles = [];
     try {
@@ -124,6 +134,8 @@ class LayoutSettings {
 // Description: Safely formats raw datetime strings from the database.
 // モジュール: formatSafeTime (ユーティリティ)
 // 説明: データベースからの生の日時文字列を安全にフォーマットします。
+// 모듈: formatSafeTime (유틸리티)
+// 설명: 데이터베이스의 원시 날짜 및 시간 문자열을 안전하게 포맷합니다.
 // ============================================================================
 String formatSafeTime(String? rawTime) {
   if (rawTime == null || rawTime.isEmpty) return '';
@@ -131,7 +143,9 @@ String formatSafeTime(String? rawTime) {
   if (safeTime.length > 16) safeTime = safeTime.substring(0, 16);
   try {
     DateTime dt = DateTime.parse(safeTime.replaceFirst(' ', 'T'));
+    // Change to universal format "MM/DD HH:MM"
     // 「月/日 時:分」という万国共通のフォーマットに変更
+    // "월/일 시:분"이라는 공통 포맷으로 변경
     return '${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   } catch (e) {
     return safeTime;
@@ -141,6 +155,7 @@ String formatSafeTime(String? rawTime) {
 // ============================================================================
 // Main Application Entry Point
 // アプリケーションのエントリポイント
+// 애플리케이션 진입점
 // ============================================================================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -153,11 +168,15 @@ void main() async {
 // Description: Root widget that configures themes and localization.
 // モジュール: DispatcherZApp
 // 説明: テーマとローカリゼーションを設定するルートウィジェット。
+// 모듈: DispatcherZApp
+// 설명: 테마 및 다국어 지원을 설정하는 루트 위젯입니다.
 // ============================================================================
 class DispatcherZApp extends StatefulWidget {
   const DispatcherZApp({Key? key}) : super(key: key);
 
+  // Static method to allow language switching from anywhere
   // どこからでも言語を切り替えられるようにするための静的メソッド
+  // 어디서든 언어를 전환할 수 있도록 하는 정적 메서드
   static _DispatcherZAppState? of(BuildContext context) =>
       context.findAncestorStateOfType<_DispatcherZAppState>();
 
@@ -171,8 +190,16 @@ class _DispatcherZAppState extends State<DispatcherZApp> {
   @override
   void initState() {
     super.initState();
+    // Load saved language settings on startup
     // ★保存されている言語設定を読み込んで起動する
-    _locale = LayoutSettings.currentLanguage == 'en' ? const Locale('en', '') : const Locale('ja', 'JP');
+    // ★저장된 언어 설정을 불러와서 시작합니다
+    if (LayoutSettings.currentLanguage == 'en') {
+      _locale = const Locale('en', '');
+    } else if (LayoutSettings.currentLanguage == 'ko') {
+      _locale = const Locale('ko', 'KR'); // ★Add Korean! / ★韓国語を追加！ / ★한국어 추가!
+    } else {
+      _locale = const Locale('ja', 'JP');
+    }
   }
 
   void setLocale(Locale value) {
@@ -191,10 +218,10 @@ class _DispatcherZAppState extends State<DispatcherZApp> {
           title: 'dispatcherZ',
           debugShowCheckedModeBanner: false,
           
-          // --- 多言語化設定 ---
+          // --- Localization Settings / 多言語化設定 / 다국어 설정 ---
           locale: _locale,
           localizationsDelegates: const [
-            AppLocalizations.delegate, // 自動生成される辞書
+            AppLocalizations.delegate, // Auto-generated dictionary / 自動生成される辞書 / 자동 생성되는 사전
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
@@ -202,6 +229,7 @@ class _DispatcherZAppState extends State<DispatcherZApp> {
           supportedLocales: const [
             Locale('ja', 'JP'), 
             Locale('en', ''),
+            Locale('ko', 'KR'), // ★Add here! / ★ここに追加！ / ★여기에 추가!
           ],
           // -------------------
 
@@ -209,7 +237,7 @@ class _DispatcherZAppState extends State<DispatcherZApp> {
             dragDevices: {PointerDeviceKind.mouse, PointerDeviceKind.touch, PointerDeviceKind.trackpad},
           ),
           themeMode: isDark ? ThemeMode.dark : ThemeMode.light, 
-          // Light Theme Configuration
+          // Light Theme Configuration / ライトテーマ設定 / 라이트 테마 설정
           theme: ThemeData(
             brightness: Brightness.light,
             primarySwatch: Colors.blueGrey,
@@ -218,7 +246,7 @@ class _DispatcherZAppState extends State<DispatcherZApp> {
             popupMenuTheme: const PopupMenuThemeData(shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero)),
             inputDecorationTheme: const InputDecorationTheme(border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
           ),
-          // Dark Theme Configuration
+          // Dark Theme Configuration / ダークテーマ設定 / 다크 테마 설정
           darkTheme: ThemeData(
             brightness: Brightness.dark,
             primarySwatch: Colors.blueGrey,
@@ -237,6 +265,7 @@ class _DispatcherZAppState extends State<DispatcherZApp> {
 // ============================================================================
 // Custom Notifications for inter-widget communication
 // ウィジェット間通信用のカスタム通知クラス群
+// 위젯 간 통신을 위한 사용자 정의 알림 클래스
 // ============================================================================
 class CloseTabNotification extends Notification {}
 class UpdateTabTitleNotification extends Notification {
@@ -255,6 +284,8 @@ class OpenDispatchTabNotification extends Notification {
 // Description: Data model representing a single tab in the application.
 // モジュール: DispatchTab
 // 説明: アプリケーション内の単一タブを表現するデータモデル。
+// 모듈: DispatchTab
+// 설명: 애플리케이션 내의 단일 탭을 나타내는 데이터 모델입니다.
 // ============================================================================
 class DispatchTab {
   final String title;
@@ -277,6 +308,8 @@ class DispatchTab {
 // Description: The primary screen containing the menu, tabs, and reservation list.
 // モジュール: MainScreen
 // 説明: メニュー、タブ、予約リストを含むメイン画面。
+// 모듈: MainScreen
+// 설명: 메뉴, 탭 및 예약 목록을 포함하는 메인 화면입니다.
 // ============================================================================
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -310,6 +343,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
     // Auto-refresh reservation list every 30 seconds
     // 30秒ごとに予約リストを自動更新する
+    // 30초마다 예약 목록 자동 새로고침
     _reservationTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (!_isLoadingReservations) {
         _fetchReservations();
@@ -318,6 +352,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
     // CTI incoming call monitor (checks /tmp/ file every second)
     // CTI着信監視（毎秒 /tmp/ ファイルをチェックする）
+    // CTI 수신 모니터링 (매초 /tmp/ 파일 확인)
     _ctiTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _checkIncomingCall();
     });
@@ -325,6 +360,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Method to check for incoming calls passed via local file
   // ローカルファイル経由で渡された着信を確認するメソッド
+  // 로컬 파일을 통해 전달된 수신 전화를 확인하는 메서드
   Future<void> _checkIncomingCall() async {
     try {
       final file = File('/tmp/dispatcherz_incoming.txt');
@@ -344,8 +380,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Handle opening a new tab when an incoming call is detected
   // 着信を検知した際に新しいタブを開く処理
+  // 수신 전화를 감지했을 때 새 탭을 여는 처리
   void _handleIncomingCall(String phone) {
-    final l10n = AppLocalizations.of(context)!; // ★ここに追加！
+    final l10n = AppLocalizations.of(context)!; // ★Add here! / ★ここに追加！ / ★여기에 추가!
     setState(() {
       final newTabIndex = _tabs.length;
       _tabs.insert(
@@ -374,6 +411,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Fetch pending reservations from the API
   // APIから未手配の予約を取得する
+  // API에서 미배차 예약 가져오기
   Future<void> _fetchReservations() async {
     setState(() => _isLoadingReservations = true);
     try {
@@ -402,7 +440,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
         });
       }
     } catch (e) {
-      print('予約リスト取得エラー: $e');
+      print('予約リスト取得エラー: $e'); // Error fetching reservation list
       if (mounted) setState(() => _isLoadingReservations = false);
     }
   }
@@ -416,6 +454,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Show dialog to confirm application exit
   // アプリケーション終了の確認ダイアログを表示する
+  // 애플리케이션 종료 확인 대화상자 표시
   Future<bool?> _showAppExitConfirmationDialog() {
     final mode = LayoutSettings.themeModeNotifier.value;
     final isDark = mode == 'dark';
@@ -424,7 +463,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     final btnBg = isColor ? Colors.redAccent : (isDark ? Colors.white : Colors.black);
     final btnFg = isColor ? Colors.white : (isDark ? Colors.black : Colors.white);
     final textCol = isDark ? Colors.white : Colors.black;
-    final l10n = AppLocalizations.of(context)!; // ★辞書を読み込み
+    final l10n = AppLocalizations.of(context)!; // ★Load dictionary / ★辞書を読み込み / ★사전 불러오기
     final existingIndex = _tabs.indexWhere((tab) => tab.isAdminDashboard);
 
     return showDialog<bool>(
@@ -432,17 +471,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
       barrierDismissible: false,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text(l10n.exitConfirmTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
-          content: Text(l10n.exitConfirmContent), // ★辞書
+          title: Text(l10n.exitConfirmTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★Dictionary / ★辞書 / ★사전
+          content: Text(l10n.exitConfirmContent), // ★Dictionary / ★辞書 / ★사전
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.cancelButton, style: TextStyle(color: textCol)), // ★既存のcancelButtonを再利用
+              child: Text(l10n.cancelButton, style: TextStyle(color: textCol)), // ★Reuse existing cancelButton / ★既存のcancelButtonを再利用 / ★기존 cancelButton 재사용
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: btnBg, foregroundColor: btnFg),
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(l10n.exitButton), // ★辞書
+              child: Text(l10n.exitButton), // ★Dictionary / ★辞書 / ★사전
             ),
           ],
         );
@@ -457,35 +496,36 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Show "About" dialog including GPL license
   // GPLライセンスを含む「このアプリについて」のダイアログを表示する
+  // GPL 라이선스가 포함된 "앱 정보" 대화상자 표시
   void _showAboutDialog() {
     final mode = LayoutSettings.themeModeNotifier.value;
     final isDark = mode == 'dark';
     final btnBg = isDark ? Colors.white : Colors.black;
     final btnFg = isDark ? Colors.black : Colors.white;
-    final l10n = AppLocalizations.of(context)!; // ★辞書を読み込み
+    final l10n = AppLocalizations.of(context)!; // ★Load dictionary / ★辞書を読み込み / ★사전 불러오기
 
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text(l10n.aboutTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
+          title: Text(l10n.aboutTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★Dictionary / ★辞書 / ★사전
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SelectableText(l10n.aboutAuthor), // ★辞書
+              SelectableText(l10n.aboutAuthor), // ★Dictionary / ★辞書 / ★사전
               const SizedBox(height: 12),
-              Text(l10n.aboutSource, style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.black54)), // ★辞書
+              Text(l10n.aboutSource, style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.black54)), // ★Dictionary / ★辞書 / ★사전
               const SelectableText('https://github.com/morihirotoshida/', style: TextStyle(color: Colors.blueAccent)),
               const SizedBox(height: 12),
-              Text(l10n.aboutLicense, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87)), // ★辞書
+              Text(l10n.aboutLicense, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87)), // ★Dictionary / ★辞書 / ★사전
             ],
           ),
           actions: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: btnBg, foregroundColor: btnFg),
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(l10n.closeButton), // ★既存のcloseButtonを再利用
+              child: Text(l10n.closeButton), // ★Reuse existing closeButton / ★既存のcloseButtonを再利用 / ★기존 closeButton 재사용
             ),
           ],
         );
@@ -495,12 +535,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Show dialog to change the admin PIN code
   // 管理者PINコードを変更するためのダイアログを表示する
+  // 관리자 PIN 코드를 변경하기 위한 대화상자 표시
   void _showChangePinDialog() {
     final TextEditingController currentPinController = TextEditingController();
     final TextEditingController newPinController = TextEditingController();
     final TextEditingController confirmPinController = TextEditingController();
     bool isProcessing = false;
-    final l10n = AppLocalizations.of(context)!; // ★辞書を読み込み
+    final l10n = AppLocalizations.of(context)!; // ★Load dictionary / ★辞書を読み込み / ★사전 불러오기
 
     showDialog(
       context: context,
@@ -509,33 +550,33 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: Text(l10n.pinChangeTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
+              title: Text(l10n.pinChangeTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★Dictionary / ★辞書 / ★사전
               content: SizedBox(
                 width: 300,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(l10n.pinChangeInstruction), // ★辞書
+                    Text(l10n.pinChangeInstruction), // ★Dictionary / ★辞書 / ★사전
                     const SizedBox(height: 16),
                     TextField(
                       controller: currentPinController,
                       obscureText: true,
                       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
-                      decoration: InputDecoration(labelText: l10n.currentPin, border: const OutlineInputBorder()), // ★辞書
+                      decoration: InputDecoration(labelText: l10n.currentPin, border: const OutlineInputBorder()), // ★Dictionary / ★辞書 / ★사전
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: newPinController,
                       obscureText: true,
                       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
-                      decoration: InputDecoration(labelText: l10n.newPin, border: const OutlineInputBorder()), // ★辞書
+                      decoration: InputDecoration(labelText: l10n.newPin, border: const OutlineInputBorder()), // ★Dictionary / ★辞書 / ★사전
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: confirmPinController,
                       obscureText: true,
                       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z0-9]'))],
-                      decoration: InputDecoration(labelText: l10n.confirmNewPin, border: const OutlineInputBorder()), // ★辞書
+                      decoration: InputDecoration(labelText: l10n.confirmNewPin, border: const OutlineInputBorder()), // ★Dictionary / ★辞書 / ★사전
                     ),
                   ],
                 ),
@@ -543,17 +584,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
               actions: [
                 TextButton(
                   onPressed: isProcessing ? null : () => Navigator.of(dialogContext).pop(),
-                  child: Text(l10n.cancelButton), // ★既存辞書
+                  child: Text(l10n.cancelButton), // ★Existing dictionary / ★既存辞書 / ★기존 사전
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
                   onPressed: isProcessing ? null : () async {
                     if (newPinController.text != confirmPinController.text) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pinMismatch), backgroundColor: Colors.redAccent)); // ★辞書
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pinMismatch), backgroundColor: Colors.redAccent)); // ★Dictionary / ★辞書 / ★사전
                       return;
                     }
                     if (newPinController.text.isEmpty || currentPinController.text.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.fillAllFields), backgroundColor: Colors.redAccent)); // ★辞書
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.fillAllFields), backgroundColor: Colors.redAccent)); // ★Dictionary / ★辞書 / ★사전
                       return;
                     }
 
@@ -570,17 +611,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
                       if (response.statusCode == 200) {
                         Navigator.of(dialogContext).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pinChangeSuccess), backgroundColor: Colors.green)); // ★辞書
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pinChangeSuccess), backgroundColor: Colors.green)); // ★Dictionary / ★辞書 / ★사전
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pinChangeFailed), backgroundColor: Colors.redAccent)); // ★辞書
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pinChangeFailed), backgroundColor: Colors.redAccent)); // ★Dictionary / ★辞書 / ★사전
                       }
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.commError), backgroundColor: Colors.redAccent)); // ★辞書
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.commError), backgroundColor: Colors.redAccent)); // ★Dictionary / ★辞書 / ★사전
                     } finally {
                       setState(() => isProcessing = false);
                     }
                   },
-                  child: isProcessing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(l10n.saveChangesButton), // ★辞書
+                  child: isProcessing ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Text(l10n.saveChangesButton), // ★Dictionary / ★辞書 / ★사전
                 ),
               ],
             );
@@ -618,6 +659,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Create a new blank dispatch tab
   // 空の新規伝票タブを作成する
+  // 빈 새 전표 탭 만들기
   void _addNewTab() {
     setState(() {
       final newTabIndex = _tabs.length; 
@@ -635,6 +677,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Toggle general dashboard view
   // 一般ダッシュボードの表示を切り替える
+  // 일반 대시보드 보기 전환
   void _toggleDispatcherViewTab() {
     final existingIndex = _tabs.indexWhere((tab) => tab.isDashboard && !tab.isAdminDashboard);
     
@@ -669,6 +712,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Toggle admin dashboard view (requires PIN)
   // 管理者ダッシュボードの表示を切り替える（PINが必要）
+  // 관리자 대시보드 보기 전환 (PIN 필요)
   Future<void> _toggleAdminDispatcherViewTab() async {
     final existingIndex = _tabs.indexWhere((tab) => tab.isAdminDashboard);
     
@@ -689,6 +733,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
     // =========================================================
     // ★ここです！ダイアログを作る前に、辞書（l10n）を読み込みます！
+    // ★Here it is! Load the dictionary (l10n) before creating the dialog!
+    // ★여기입니다! 대화 상자를 만들기 전에 사전(l10n)을 불러옵니다!
     final l10n = AppLocalizations.of(context)!; 
     // =========================================================
 
@@ -723,7 +769,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
               actions: [
                 TextButton(
                   onPressed: isVerifying ? null : () => Navigator.of(dialogContext).pop(),
-                  child: const Text('キャンセル'),
+                  child: const Text('キャンセル'), // Cancel
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
@@ -780,8 +826,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Open an existing reservation data in a new tab
   // 既存の予約データを新しいタブで開く
+  // 기존 예약 데이터를 새 탭에서 열기
   void _openReservationTab(Map<String, dynamic> reservationData) {
-    final name = reservationData['name'] ?? '名称未設定';
+    final name = reservationData['name'] ?? '名称未設定'; // Unnamed
     final existingIndex = _tabs.indexWhere((tab) => tab.title.contains(name));
     
     if (existingIndex != -1) {
@@ -796,7 +843,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
       _tabs.insert(
         newTabIndex,
         DispatchTab(
-          title: '　$name 様　', 
+          title: '　$name 様　', // Mr./Ms. $name
           content: DispatchForm(key: UniqueKey(), initialData: reservationData), 
           isReservation: true, 
         ),
@@ -808,6 +855,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Close the currently active tab
   // 現在アクティブなタブを閉じる
+  // 현재 활성 탭 닫기
   void _closeCurrentTab() {
     if (_tabs.isEmpty) return;
     final currentIndex = _tabController.index;
@@ -830,6 +878,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Update title of current tab dynamically
   // 現在のタブのタイトルを動的に更新する
+  // 현재 탭의 제목을 동적으로 업데이트
   void _updateCurrentTabTitle(String newTitle) {
     final currentIndex = _tabController.index;
     setState(() {
@@ -856,13 +905,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 
   // Save or delete the UI layout profile
   // UIレイアウトプロファイルを保存または削除する
+  // UI 레이아웃 프로필 저장 또는 삭제
   Future<bool> _saveOrDeleteLayout() async {
     TextEditingController nameCtrl = TextEditingController();
     bool isChanged = false; 
     final mode = LayoutSettings.themeModeNotifier.value;
     final isDark = mode == 'dark';
     final isColor = mode == 'color';
-    final l10n = AppLocalizations.of(context)!; // ★辞書を読み込み
+    final l10n = AppLocalizations.of(context)!; // ★Load dictionary / ★辞書を読み込み / ★사전 불러오기
 
     final saveBtnBg = isColor ? Colors.blueAccent : (isDark ? Colors.white : Colors.black);
     final delBtnBg = isColor ? Colors.redAccent : (isDark ? Colors.white : Colors.black);
@@ -871,16 +921,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.layoutDialogTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
+        title: Text(l10n.layoutDialogTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★Dictionary / ★辞書 / ★사전
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l10n.layoutDialogContent), // ★辞書
+            Text(l10n.layoutDialogContent), // ★Dictionary / ★辞書 / ★사전
             const SizedBox(height: 16),
             TextField(
               controller: nameCtrl,
-              decoration: InputDecoration(labelText: l10n.layoutNameLabel, border: const OutlineInputBorder()), // ★辞書
+              decoration: InputDecoration(labelText: l10n.layoutNameLabel, border: const OutlineInputBorder()), // ★Dictionary / ★辞書 / ★사전
               autofocus: true,
             ),
           ]
@@ -888,7 +938,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx), 
-            child: Text(l10n.cancelButton, style: TextStyle(color: isDark ? Colors.white : Colors.black)) // ★既存の「キャンセル」を再利用
+            child: Text(l10n.cancelButton, style: TextStyle(color: isDark ? Colors.white : Colors.black)) // ★Reuse existing "Cancel" / ★既存の「キャンセル」を再利用 / ★기존 "취소" 재사용
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: delBtnBg, foregroundColor: btnFg),
@@ -900,12 +950,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                 Navigator.pop(ctx);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.layoutDeletedMsg(name), style: const TextStyle(fontWeight: FontWeight.bold)), backgroundColor: delBtnBg) // ★変数（name）を渡して翻訳！
+                    SnackBar(content: Text(l10n.layoutDeletedMsg(name), style: const TextStyle(fontWeight: FontWeight.bold)), backgroundColor: delBtnBg) // ★Translate passing variable (name)! / ★変数（name）を渡して翻訳！ / ★변수(name)를 전달하여 번역!
                   );
                 }
               }
             },
-            child: Text(l10n.deleteLayoutBtn), // ★辞書
+            child: Text(l10n.deleteLayoutBtn), // ★Dictionary / ★辞書 / ★사전
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: saveBtnBg, foregroundColor: btnFg),
@@ -918,12 +968,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                 Navigator.pop(ctx);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.layoutSavedMsg(name), style: const TextStyle(fontWeight: FontWeight.bold)), backgroundColor: saveBtnBg) // ★変数（name）を渡して翻訳！
+                    SnackBar(content: Text(l10n.layoutSavedMsg(name), style: const TextStyle(fontWeight: FontWeight.bold)), backgroundColor: saveBtnBg) // ★Translate passing variable (name)! / ★変数（name）を渡して翻訳！ / ★변수(name)를 전달하여 번역!
                   );
                 }
               }
             },
-            child: Text(l10n.saveLayoutBtn), // ★辞書
+            child: Text(l10n.saveLayoutBtn), // ★Dictionary / ★辞書 / ★사전
           ),
         ],
       )
@@ -935,30 +985,38 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     setState(() {
       _showReservationList = LayoutSettings.showReservationList;
     });
-    // ★確認：レイアウト読み込み時に、言語も強制的に切り替える指示が入っていますか？
+    
+    // ★Switch correctly according to the saved language (currentLanguage)!
+    // ★保存された言語（currentLanguage）に合わせて正しく切り替える！
+    // ★저장된 언어(currentLanguage)에 맞춰 올바르게 전환합니다!
     if (LayoutSettings.currentLanguage == 'en') {
       DispatcherZApp.of(context)?.setLocale(const Locale('en', ''));
+    } else if (LayoutSettings.currentLanguage == 'ko') {
+      DispatcherZApp.of(context)?.setLocale(const Locale('ko', 'KR')); // ★Add Korean branch! / ★韓国語の分岐を追加！ / ★한국어 분기 추가!
     } else {
       DispatcherZApp.of(context)?.setLocale(const Locale('ja', 'JP'));
     }
   }
 
+  // --- ★Added from here: Helper method to multilingualize tab titles ---
   // --- ★ここから追加：タブのタイトルを多言語化するヘルパーメソッド ---
+  // --- ★여기부터 추가: 탭 제목을 다국어화하는 헬퍼 메서드 ---
   String _getLocalizedTabTitle(DispatchTab tab, AppLocalizations l10n) {
     if (tab.isDashboard) {
       return tab.isAdminDashboard ? l10n.tabDashboardAdmin : l10n.tabDashboardGeneral;
-    } else if (!tab.isReservation && tab.title.contains('新規伝票')) {
+    } else if (!tab.isReservation && tab.title.contains('新規伝票')) { // New Dispatch
       return l10n.tabNewDispatch;
     }
-    return tab.title; // 「山田 様 (入力中)」などの動的なタイトルはそのまま表示
+    return tab.title; // Dynamic titles like "Mr. Yamada (Entering)" are displayed as is / 「山田 様 (入力中)」などの動的なタイトルはそのまま表示 / "Yamada 님 (입력 중)"과 같은 동적 제목은 그대로 표시
   }
 
   // Build the reservation list sidebar
   // サイドバーの予約リストを構築する
+  // 사이드바의 예약 목록 구축
   Widget _buildReservationList(String mode) {
     final isDark = mode == 'dark';
     final isColor = mode == 'color';
-    final l10n = AppLocalizations.of(context)!; // ★辞書を追加
+    final l10n = AppLocalizations.of(context)!; // ★Add dictionary / ★辞書を追加 / ★사전 추가
 
     Color headerBg = isColor ? Colors.redAccent : (isDark ? Colors.grey[800]! : Colors.grey[200]!);
     Color headerText = isColor ? Colors.white : (isDark ? Colors.white : Colors.black);
@@ -978,7 +1036,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
               children: [
                 Expanded(
                   child: Text(
-                    l10n.reservationListTitle, // ★辞書に変更
+                    l10n.reservationListTitle, // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
                     style: TextStyle(color: headerText, fontWeight: FontWeight.bold, fontSize: 16),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -986,7 +1044,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                 IconButton(
                   icon: Icon(Icons.refresh, color: headerText, size: 20),
                   onPressed: _fetchReservations,
-                  tooltip: l10n.tooltipRefresh, // ★辞書に変更
+                  tooltip: l10n.tooltipRefresh, // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
                 )
               ],
             ),
@@ -995,7 +1053,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
             child: _isLoadingReservations && _reservations.isEmpty
               ? const Center(child: CircularProgressIndicator())
               : _reservations.isEmpty
-                ? Center(child: Text(l10n.noWaitingReservations, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54))) // ★辞書に変更
+                ? Center(child: Text(l10n.noWaitingReservations, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54))) // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
                 : Scrollbar(
                     controller: _reservationScrollController,
                     thumbVisibility: true, 
@@ -1081,7 +1139,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
       isCurrentTabDashboard = _tabs[_tabController.index].isDashboard;
     }
 
-    final l10n = AppLocalizations.of(context)!; // ★ここにこの1行を追加！
+    final l10n = AppLocalizations.of(context)!; // ★Add this 1 line here! / ★ここにこの1行を追加！ / ★여기에 이 1줄 추가!
 
     return ValueListenableBuilder<String>(
       valueListenable: LayoutSettings.themeModeNotifier,
@@ -1197,7 +1255,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                                       alignment: Alignment.center,
                                       child: Text(
-                                        _getLocalizedTabTitle(tab, l10n), // ★ここを書き換え
+                                        _getLocalizedTabTitle(tab, l10n), // ★Rewrite here / ★ここを書き換え / ★여기 재작성
                                         style: TextStyle(
                                           color: textColor,
                                           fontWeight: (tab.isReservation || tab.isDashboard) ? FontWeight.bold : FontWeight.normal,
@@ -1218,7 +1276,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                         ),
                         alignment: Alignment.center,
                         child: PopupMenuButton<int>(
-                          tooltip: l10n.tooltipTabList, // ★辞書に変更！
+                          tooltip: l10n.tooltipTabList, // ★Change to dictionary! / ★辞書に変更！ / ★사전으로 변경!
                           padding: EdgeInsets.zero,
                           icon: Icon(Icons.format_list_bulleted, color: isDark ? Colors.white54 : Colors.grey, size: 22),
                           offset: const Offset(0, 40),
@@ -1241,7 +1299,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                                         Icon(iconData, size: 16, color: iconColor),
                                         const SizedBox(width: 8),
                                         Text(
-                                          _getLocalizedTabTitle(entry.value, l10n).trim(), // ★ここを書き換え
+                                          _getLocalizedTabTitle(entry.value, l10n).trim(), // ★Rewrite here / ★ここを書き換え / ★여기 재작성
                                           style: TextStyle(
                                             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                             color: isSelected ? (isColor ? Colors.blueAccent : (isDark ? Colors.white : Colors.black)) : (isDark ? Colors.white70 : Colors.black87),
@@ -1327,6 +1385,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
 // Description: The top menu bar widget providing access to system settings, UI toggles, and help.
 // モジュール: AppMenuBar
 // 説明: システム設定、UI切り替え、ヘルプへのアクセスを提供する上部メニューバーウィジェット。
+// 모듈: AppMenuBar
+// 설명: 시스템 설정, UI 전환 및 도움말에 대한 액세스를 제공하는 상단 메뉴 바 위젯입니다.
 // ============================================================================
 class AppMenuBar extends StatefulWidget {
   final VoidCallback onNewPressed;
@@ -1337,7 +1397,7 @@ class AppMenuBar extends StatefulWidget {
   final Future<bool> Function() onSaveOrDeleteLayoutPressed; 
   final VoidCallback onLayoutLoaded; 
   final VoidCallback onShowAboutDialog; 
-  final VoidCallback onRequestExit;     
+  final VoidCallback onRequestExit;      
   final VoidCallback onChangePinPressed; 
   final bool isCurrentTabDashboard; 
   final bool isReservationListVisible; 
@@ -1384,7 +1444,7 @@ class _AppMenuBarState extends State<AppMenuBar> {
 
 @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!; // ★この1行を追加！
+    final l10n = AppLocalizations.of(context)!; // ★Add this 1 line! / ★この1行を追加！ / ★이 1줄 추가!
 
     return ValueListenableBuilder<String>(
       valueListenable: LayoutSettings.themeModeNotifier,
@@ -1402,12 +1462,12 @@ class _AppMenuBarState extends State<AppMenuBar> {
               padding: MaterialStatePropertyAll(EdgeInsets.zero),
             ),
             children: [
-              // --- ファイルメニュー ---
+              // --- File Menu / ファイルメニュー / 파일 메뉴 ---
               SubmenuButton(
                 menuChildren: [
                   MenuItemButton(
                     onPressed: widget.onNewPressed,
-                    child: Text(l10n.newDispatch), // 辞書から呼び出し
+                    child: Text(l10n.newDispatch), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                   MenuItemButton(
                     onPressed: () {
@@ -1417,16 +1477,16 @@ class _AppMenuBarState extends State<AppMenuBar> {
                         CloseTabNotification().dispatch(context);
                       }
                     },
-                    child: Text(l10n.closeDispatch), // 辞書から呼び出し
+                    child: Text(l10n.closeDispatch), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text(l10n.fileMenu, style: TextStyle(color: menuTextColor)), // 辞書から呼び出し
+                  child: Text(l10n.fileMenu, style: TextStyle(color: menuTextColor)), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                 ),
               ),
 
-              // --- 表示メニュー ---
+              // --- View Menu / 表示メニュー / 보기 메뉴 ---
               SubmenuButton(
                 menuChildren: [
                   CheckboxMenuButton(
@@ -1434,14 +1494,14 @@ class _AppMenuBarState extends State<AppMenuBar> {
                     onChanged: (bool? value) {
                       widget.onToggleReservationList();
                     },
-                    child: Text(l10n.reservationList), // 辞書から呼び出し
+                    child: Text(l10n.reservationList), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                   CheckboxMenuButton(
                     value: widget.isDashboardOpen,
                     onChanged: (bool? value) {
                       widget.onToggleDispatcherView();
                     },
-                    child: Text(l10n.dashboardGeneral), // 辞書から呼び出し
+                    child: Text(l10n.dashboardGeneral), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                   const PopupMenuDivider(),
                   CheckboxMenuButton(
@@ -1449,16 +1509,16 @@ class _AppMenuBarState extends State<AppMenuBar> {
                     onChanged: (bool? value) {
                       widget.onToggleAdminDispatcherView();
                     },
-                    child: Text(l10n.dashboardAdmin, style: const TextStyle(fontWeight: FontWeight.bold)), // 辞書から呼び出し
+                    child: Text(l10n.dashboardAdmin, style: const TextStyle(fontWeight: FontWeight.bold)), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text(l10n.viewMenu, style: TextStyle(color: menuTextColor)), // 辞書から呼び出し
+                  child: Text(l10n.viewMenu, style: TextStyle(color: menuTextColor)), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                 ),
               ),
 
-              // --- 設定メニュー ---
+              // --- Settings Menu / 設定メニュー / 설정 메뉴 ---
               SubmenuButton(
                 menuChildren: [
                   SubmenuButton(
@@ -1472,7 +1532,7 @@ class _AppMenuBarState extends State<AppMenuBar> {
                             LayoutSettings.save('default'); 
                           }
                         },
-                        child: Text(l10n.lightMode), // 辞書から呼び出し
+                        child: Text(l10n.lightMode), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                       ),
                       RadioMenuButton<String>(
                         value: 'dark',
@@ -1483,7 +1543,7 @@ class _AppMenuBarState extends State<AppMenuBar> {
                             LayoutSettings.save('default'); 
                           }
                         },
-                        child: Text(l10n.darkMode), // 辞書から呼び出し
+                        child: Text(l10n.darkMode), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                       ),
                       RadioMenuButton<String>(
                         value: 'color',
@@ -1494,10 +1554,10 @@ class _AppMenuBarState extends State<AppMenuBar> {
                             LayoutSettings.save('default'); 
                           }
                         },
-                        child: Text(l10n.colorMode), // 辞書から呼び出し
+                        child: Text(l10n.colorMode), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                       ),
                     ],
-                    child: Text(l10n.modeChangeMenu), // 辞書から呼び出し
+                    child: Text(l10n.modeChangeMenu), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                   const PopupMenuDivider(),
                   MenuItemButton(
@@ -1507,19 +1567,19 @@ class _AppMenuBarState extends State<AppMenuBar> {
                         _refreshProfiles(); 
                       }
                     },
-                    child: Text(l10n.saveDeleteLayout), // 辞書から呼び出し
+                    child: Text(l10n.saveDeleteLayout), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                   SubmenuButton(
                     menuChildren: _savedProfiles.isEmpty
-                        ? [MenuItemButton(child: Text(l10n.noSavedLayouts, style: const TextStyle(color: Colors.grey)))] // 辞書から呼び出し
+                        ? [MenuItemButton(child: Text(l10n.noSavedLayouts, style: const TextStyle(color: Colors.grey)))] // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                         : _savedProfiles.map((profile) => MenuItemButton(
                               onPressed: () async {
                                 await LayoutSettings.load(profile);
                                 widget.onLayoutLoaded(); 
                                 if (context.mounted) {
-                                  // ※スナックバーの多言語化を行いました
+                                  // ※Multilingualized SnackBar / ※スナックバーの多言語化を行いました / ※스낵바 다국어화 완료
                                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                    content: Text(l10n.layoutLoadedMsg(profile), style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書に変更し、変数profileを渡す！
+                                    content: Text(l10n.layoutLoadedMsg(profile), style: const TextStyle(fontWeight: FontWeight.bold)), // ★Change to dictionary and pass variable profile! / ★辞書に変更し、変数profileを渡す！ / ★사전으로 변경하고 변수 profile 전달!
                                     backgroundColor: isDark ? Colors.white : Colors.black,
                                     behavior: SnackBarBehavior.floating,
                                   ));
@@ -1527,61 +1587,74 @@ class _AppMenuBarState extends State<AppMenuBar> {
                               },
                               child: Text(profile),
                             )).toList(),
-                    child: Text(l10n.loadSavedLayout), // 辞書から呼び出し
+                    child: Text(l10n.loadSavedLayout), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                   const PopupMenuDivider(),
                   MenuItemButton(
                     onPressed: widget.onChangePinPressed,
-                    child: Text(l10n.changeAdminPin), // 辞書から呼び出し
+                    child: Text(l10n.changeAdminPin), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text(l10n.settingsMenu, style: TextStyle(color: menuTextColor)), // 辞書から呼び出し
+                  child: Text(l10n.settingsMenu, style: TextStyle(color: menuTextColor)), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                 ),
               ),
 
-              // --- ヘルプメニュー ---
+              // --- Help Menu / ヘルプメニュー / 도움말 메뉴 ---
               SubmenuButton(
                 menuChildren: [
                   MenuItemButton(
                     onPressed: widget.onShowAboutDialog, 
-                    child: Text(l10n.aboutApp) // 辞書から呼び出し
+                    child: Text(l10n.aboutApp) // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                   MenuItemButton(
                     onPressed: widget.onRequestExit, 
-                    child: Text(l10n.exitApp), // 辞書から呼び出し
+                    child: Text(l10n.exitApp), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                   ),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text(l10n.helpMenu, style: TextStyle(color: menuTextColor)), // 辞書から呼び出し
+                  child: Text(l10n.helpMenu, style: TextStyle(color: menuTextColor)), // Call from dictionary / 辞書から呼び出し / 사전에서 호출
                 ),
               ),
 
-              // --- Language メニュー ---
+              // --- Language Menu / Language メニュー / Language 메뉴 ---
               SubmenuButton(
                 menuChildren: [
                   MenuItemButton(
                     onPressed: () {
-                      LayoutSettings.currentLanguage = 'ja'; // ★裏側のシステムに「日本語」を記憶
-                      LayoutSettings.save('default'); // ★設定を保存
+                      LayoutSettings.currentLanguage = 'ja';
+                      LayoutSettings.save('default');
                       DispatcherZApp.of(context)?.setLocale(const Locale('ja', 'JP'));
                     },
                     child: const Text('Japanese (日本語)'), 
                   ),
                   MenuItemButton(
                     onPressed: () {
-                      LayoutSettings.currentLanguage = 'en'; // ★裏側のシステムに「英語」を記憶
-                      LayoutSettings.save('default'); // ★設定を保存
+                      LayoutSettings.currentLanguage = 'en';
+                      LayoutSettings.save('default');
                       DispatcherZApp.of(context)?.setLocale(const Locale('en', ''));
                     },
                     child: const Text('English (英語)'), 
                   ),
+                  // ==========================================
+                  // ★Added from here: Korean switch button
+                  // ★ここから追加：韓国語切り替えボタン
+                  // ★여기부터 추가: 한국어 전환 버튼
+                  MenuItemButton(
+                    onPressed: () {
+                      LayoutSettings.currentLanguage = 'ko'; // ★Remember "Korean" in backend system / ★裏側のシステムに「韓国語」を記憶 / ★백엔드 시스템에 "한국어" 기억
+                      LayoutSettings.save('default');
+                      DispatcherZApp.of(context)?.setLocale(const Locale('ko', 'KR'));
+                    },
+                    child: const Text('Korean (한국어)'), 
+                  ),
+                  // ==========================================
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('Language', style: TextStyle(color: menuTextColor)), // 万国共通の固定テキスト
+                  child: Text('Language', style: TextStyle(color: menuTextColor)),
                 ),
               ),
             ],
@@ -1598,6 +1671,9 @@ class _AppMenuBarState extends State<AppMenuBar> {
 // モジュール: DispatchForm
 // 説明: 配車記録を作成・更新するための主要な入力フォーム。
 //      マップ連携、CTI処理、およびAPI保存メカニズムを含みます。
+// 모듈: DispatchForm
+// 설명: 배차 기록을 작성 및 업데이트하기 위한 기본 입력 양식입니다.
+//      지도 연동, CTI 처리 및 API 저장 메커니즘을 포함합니다.
 // ============================================================================
 class DispatchForm extends StatefulWidget {
   final Map<String, dynamic>? initialData;
@@ -1654,6 +1730,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
 
   // Generate a random 8-digit customer number
   // 8桁のランダムな顧客番号を生成する
+  // 8자리 임의의 고객 번호 생성
   String _generateRandomCustomerNumber() {
     final random = Random();
     return (random.nextInt(90000000) + 10000000).toString(); 
@@ -1692,6 +1769,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
 
     // Handle CTI auto-search if marked as an incoming call
     // 着信フラグがある場合は自動で顧客検索を実行する
+    // 수신 전화 플래그가 있는 경우 자동으로 고객 검색 실행
     if (widget.initialData?['isIncomingCall'] == true) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _searchCustomerByPhone();
@@ -1701,6 +1779,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
 
   // Initialize and round datetime dropdowns
   // 日時のドロップダウンを初期化し、丸める
+  // 날짜 및 시간 드롭다운 초기화 및 반올림
   void _initializeDateTime() {
     DateTime dispatchTime;
     DateTime completionTime;
@@ -1761,6 +1840,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
 
   // Search address coordinates using OpenStreetMap API
   // OpenStreetMap APIを使用して住所の座標を検索する
+  // OpenStreetMap API를 사용하여 주소 좌표 검색
   Future<void> _searchAddress(TextEditingController controller, String fieldKey) async {
     final address = controller.text;
     if (address.isEmpty) return;
@@ -1794,11 +1874,11 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
           
           _mapController.move(newLocation, 18.0);
         } else {
-          _showErrorDialog('住所が見つかりませんでした。');
+          _showErrorDialog('住所が見つかりませんでした。'); // Address not found
         }
       }
     } catch (e) {
-      _showErrorDialog('通信エラーが発生しました。');
+      _showErrorDialog('通信エラーが発生しました。'); // Communication error occurred
     } finally {
       setState(() {
         _loadingField = null; 
@@ -1808,9 +1888,12 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
 
   // Search customer history in MySQL via Laravel API based on phone number
   // 電話番号を基にLaravel API経由でMySQL内の顧客履歴を検索する
+  // 전화번호를 기반으로 Laravel API를 통해 MySQL에서 고객 기록 검색
   Future<void> _searchCustomerByPhone() async {
     // ==========================================
     // ★ここです！この部屋（関数）にも辞書を持ち込む！
+    // ★Here it is! Bring the dictionary into this room (function) too!
+    // ★여기입니다! 이 방(함수)에도 사전을 가져옵니다!
     final l10n = AppLocalizations.of(context)!;
     // ==========================================
     final phone = _phoneController.text.trim();
@@ -1877,6 +1960,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
 
   // Submit form data to Laravel API (Create or Update)
   // フォームのデータをLaravel APIに送信する（作成または更新）
+  // 양식 데이터를 Laravel API에 제출(생성 또는 업데이트)
   Future<bool> _submitDataAndSync(BuildContext ctx) async {
     final l10n = AppLocalizations.of(ctx)!; 
 
@@ -1892,6 +1976,8 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
     
     // =================================================================
     // ★追加：保存直前に「電話番号のサイレント重複チェック」を行う
+    // ★Addition: Perform a "silent duplicate check for phone number" just before saving
+    // ★추가: 저장 직전에 "전화번호 무음 중복 확인" 수행
     // =================================================================
     try {
       final phone = _phoneController.text.trim();
@@ -1901,13 +1987,19 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
       if (searchRes.statusCode == 200) {
         final searchData = json.decode(searchRes.body);
         if (searchData['customer_number'] != null) {
+          // If the same phone number exists in the database,
+          // discard the randomly generated temporary ID and overwrite it with the existing customer number!
           // データベースに同じ電話番号が存在する場合、
           // ランダム生成された仮のIDを破棄して、既存の顧客番号に書き換える！
+          // 데이터베이스에 동일한 전화번호가 존재하는 경우,
+          // 임의로 생성된 임시 ID를 폐기하고 기존 고객 번호로 덮어씁니다!
           _customerNumberController.text = searchData['customer_number'].toString();
         }
       }
     } catch (e) {
+      // Ignore communication errors like cannot connect to API, and proceed to save processing
       // APIに繋がらない等の通信エラー時は無視して、そのまま保存処理へ進む
+      // API 연결 실패 등 통신 오류 시 무시하고 저장 처리로 진행
     }
     // =================================================================
 
@@ -1971,7 +2063,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
         );
       }
     } catch (e) {
-      print('送信エラー: $e');
+      print('送信エラー: $e'); // Transmission error
       setState(() => _isSaving = false);
       return false;
     }
@@ -1979,7 +2071,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
     RefreshDataNotification().dispatch(ctx); 
     
     String displayName = _nameController.text.trim();
-    String tabTitle = displayName.isNotEmpty ? displayName : '伝票 (#$_currentRecordId)';
+    String tabTitle = displayName.isNotEmpty ? displayName : '伝票 (#$_currentRecordId)'; // Dispatch
     UpdateTabTitleNotification(l10n.tabSavedDispatch(tabTitle)).dispatch(ctx);
     
     setState(() => _isSaving = false);
@@ -1990,7 +2082,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
   Widget _buildSearchableLocationField(String label, TextEditingController controller, String fieldKey, bool isDark, bool isColor) {
     final bool isThisLoading = _loadingField == fieldKey;
     Color iconColor = isColor ? Colors.redAccent : (isDark ? Colors.white70 : Colors.black87);
-    final l10n = AppLocalizations.of(context)!; // 辞書を読み込み
+    final l10n = AppLocalizations.of(context)!; // Load dictionary / 辞書を読み込み / 사전 불러오기
 
     return Row(
       children: [
@@ -2007,7 +2099,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
           icon: isThisLoading 
               ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
               : Icon(Icons.location_on, color: iconColor),
-          tooltip: l10n.searchMapTooltip, // ★辞書から呼び出し
+          tooltip: l10n.searchMapTooltip, // ★Call from dictionary / ★辞書から呼び出し / ★사전에서 호출
           onPressed: _loadingField != null ? null : () => _searchAddress(controller, fieldKey),
         ),
       ],
@@ -2019,7 +2111,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
     super.build(context); 
     final formContext = context; 
     final screenWidth = MediaQuery.of(context).size.width;
-    final l10n = AppLocalizations.of(context)!; // ★辞書を読み込み
+    final l10n = AppLocalizations.of(context)!; // ★Load dictionary / ★辞書を読み込み / ★사전 불러오기
 
     return ValueListenableBuilder<String>(
       valueListenable: LayoutSettings.themeModeNotifier,
@@ -2062,7 +2154,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                             controller: _customerNumberController,
                             readOnly: true, 
                             decoration: InputDecoration(
-                              labelText: l10n.customerNumberAuto, // ★辞書
+                              labelText: l10n.customerNumberAuto, // ★Dictionary / ★辞書 / ★사전
                               filled: false, 
                             ),
                             style: TextStyle(
@@ -2070,7 +2162,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                             ),
                           ),
                           const SizedBox(height: 8),
-                          _buildTextField(l10n.customerName, controller: _nameController, maxLength: 64), // ★辞書
+                          _buildTextField(l10n.customerName, controller: _nameController, maxLength: 64), // ★Dictionary / ★辞書 / ★사전
                           const SizedBox(height: 8),
                           
                           Row(
@@ -2084,8 +2176,8 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                     LengthLimitingTextInputFormatter(20),
                                   ],
                                   decoration: InputDecoration(
-                                    labelText: l10n.phoneNumberRequired, // ★辞書
-                                    hintText: l10n.phoneHint, // ★辞書
+                                    labelText: l10n.phoneNumberRequired, // ★Dictionary / ★辞書 / ★사전
+                                    hintText: l10n.phoneHint, // ★Dictionary / ★辞書 / ★사전
                                   ),
                                   onFieldSubmitted: (_) => _searchCustomerByPhone(),
                                 ),
@@ -2093,7 +2185,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                               const SizedBox(width: 8),
                               IconButton(
                                 icon: Icon(Icons.search, color: searchIconColor),
-                                tooltip: l10n.tooltipSearchCustomer, // ★辞書に変更！
+                                tooltip: l10n.tooltipSearchCustomer, // ★Change to dictionary! / ★辞書に変更！ / ★사전으로 변경!
                                 onPressed: _searchCustomerByPhone,
                               ),
                             ],
@@ -2101,15 +2193,15 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                           
                           const Divider(height: 20),
                           
-                          _buildSearchableLocationField(l10n.pickupLocation1, _loc1Controller, 'loc1', isDark, isColor), // ★辞書
+                          _buildSearchableLocationField(l10n.pickupLocation1, _loc1Controller, 'loc1', isDark, isColor), // ★Dictionary / ★辞書 / ★사전
                           const SizedBox(height: 8),
-                          _buildSearchableLocationField(l10n.pickupLocation2, _loc2Controller, 'loc2', isDark, isColor), // ★辞書
+                          _buildSearchableLocationField(l10n.pickupLocation2, _loc2Controller, 'loc2', isDark, isColor), // ★Dictionary / ★辞書 / ★사전
                           const SizedBox(height: 8),
-                          _buildSearchableLocationField(l10n.pickupLocation3, _loc3Controller, 'loc3', isDark, isColor), // ★辞書
+                          _buildSearchableLocationField(l10n.pickupLocation3, _loc3Controller, 'loc3', isDark, isColor), // ★Dictionary / ★辞書 / ★사전
                           
                           const Divider(height: 20),
 
-                          Text(l10n.dispatchDateTime, style: TextStyle(fontSize: 12, color: subTextCol)), // ★辞書
+                          Text(l10n.dispatchDateTime, style: TextStyle(fontSize: 12, color: subTextCol)), // ★Dictionary / ★辞書 / ★사전
                           const SizedBox(height: 4),
                           Row(
                             children: [
@@ -2132,7 +2224,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                           ),
                           const SizedBox(height: 16),
                           
-                          Text(l10n.completionDateTime, style: TextStyle(fontSize: 12, color: subTextCol)), // ★辞書
+                          Text(l10n.completionDateTime, style: TextStyle(fontSize: 12, color: subTextCol)), // ★Dictionary / ★辞書 / ★사전
                           const SizedBox(height: 4),
                           Row(
                             children: [
@@ -2155,14 +2247,14 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                           ),
                           const Divider(height: 20),
 
-                          _buildTextField(l10n.callArea, maxLines: 2, controller: _callAreaController, maxLength: 128), // ★辞書
+                          _buildTextField(l10n.callArea, maxLines: 2, controller: _callAreaController, maxLength: 128), // ★Dictionary / ★辞書 / ★사전
                           const SizedBox(height: 8),
-                          _buildTextField(l10n.guidance, maxLines: 4, controller: _guidanceController, maxLength: 512), // ★辞書
+                          _buildTextField(l10n.guidance, maxLines: 4, controller: _guidanceController, maxLength: 512), // ★Dictionary / ★辞書 / ★사전
                           const SizedBox(height: 8),
                           
-                          _buildTextField(l10n.destination, maxLines: 2, controller: _destinationController, maxLength: 128), // ★辞書
+                          _buildTextField(l10n.destination, maxLines: 2, controller: _destinationController, maxLength: 128), // ★Dictionary / ★辞書 / ★사전
                           const SizedBox(height: 8),
-                          _buildTextField('Primary', maxLines: 3, controller: _primaryController, maxLength: 256), // 固有名詞なのでそのまま
+                          _buildTextField('Primary', maxLines: 3, controller: _primaryController, maxLength: 256), // Proper noun, leave as is / 固有名詞なのでそのまま / 고유 명사이므로 그대로
                           
                           const SizedBox(height: 10),
                           Wrap(
@@ -2182,7 +2274,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                 },
                                 child: _isSaving 
                                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                    : Text(isSaved ? l10n.resaveChanges : l10n.saveComplete, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
+                                    : Text(isSaved ? l10n.resaveChanges : l10n.saveComplete, style: const TextStyle(fontWeight: FontWeight.bold)), // ★Dictionary / ★辞書 / ★사전
                               ),
                               
                               OutlinedButton(
@@ -2201,12 +2293,12 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                       return StatefulBuilder(
                                         builder: (context, setDialogState) {
                                           return AlertDialog(
-                                            title: Text(l10n.closeDispatchConfirmTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★辞書
-                                            content: Text(l10n.closeDispatchConfirmContent), // ★辞書
+                                            title: Text(l10n.closeDispatchConfirmTitle, style: const TextStyle(fontWeight: FontWeight.bold)), // ★Dictionary / ★辞書 / ★사전
+                                            content: Text(l10n.closeDispatchConfirmContent), // ★Dictionary / ★辞書 / ★사전
                                             actions: [
                                               TextButton(
                                                 onPressed: () => Navigator.of(dialogContext).pop(),
-                                                child: Text(l10n.cancelButton, style: TextStyle(color: isDark ? Colors.white : Colors.black)), // ★辞書
+                                                child: Text(l10n.cancelButton, style: TextStyle(color: isDark ? Colors.white : Colors.black)), // ★Dictionary / ★辞書 / ★사전
                                               ),
                                               ElevatedButton(
                                                 style: ElevatedButton.styleFrom(
@@ -2226,7 +2318,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                                 },
                                                 child: isDialogSaving 
                                                     ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-                                                    : (isDialogSaved ? Text(l10n.savedButton) : Text(l10n.saveButton)), // ★辞書
+                                                    : (isDialogSaved ? Text(l10n.savedButton) : Text(l10n.saveButton)), // ★Dictionary / ★辞書 / ★사전
                                               ),
                                               ElevatedButton(
                                                 style: ElevatedButton.styleFrom(
@@ -2237,7 +2329,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                                   Navigator.of(dialogContext).pop();
                                                   CloseTabNotification().dispatch(formContext); 
                                                 },
-                                                child: Text(l10n.closeButton), // ★辞書
+                                                child: Text(l10n.closeButton), // ★Dictionary / ★辞書 / ★사전
                                               ),
                                             ],
                                           );
@@ -2246,7 +2338,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                                     },
                                   );
                                 },
-                                child: Text(l10n.closeButton), // ★辞書
+                                child: Text(l10n.closeButton), // ★Dictionary / ★辞書 / ★사전
                               ),
                             ],
                           ),
@@ -2325,7 +2417,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                             _mapController.move(_mapController.camera.center, _mapController.camera.zoom + 1.0);
                           },
                           icon: const Icon(Icons.zoom_in),
-                          label: Text(l10n.zoomIn, style: const TextStyle(fontWeight: FontWeight.bold)), // ★constを外し、辞書に変更！
+                          label: Text(l10n.zoomIn, style: const TextStyle(fontWeight: FontWeight.bold)), // ★Remove const, change to dictionary! / ★constを外し、辞書に変更！ / ★const를 제거하고 사전으로 변경!
                         ),
                         const SizedBox(width: 32),
                         ElevatedButton.icon(
@@ -2338,7 +2430,7 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
                             _mapController.move(_mapController.camera.center, _mapController.camera.zoom - 1.0);
                           },
                           icon: const Icon(Icons.zoom_out),
-                          label: Text(l10n.zoomOut, style: const TextStyle(fontWeight: FontWeight.bold)), // ★constを外し、辞書に変更！
+                          label: Text(l10n.zoomOut, style: const TextStyle(fontWeight: FontWeight.bold)), // ★Remove const, change to dictionary! / ★constを外し、辞書に変更！ / ★const를 제거하고 사전으로 변경!
                         ),
                       ],
                     ),
@@ -2382,6 +2474,9 @@ class _DispatchFormState extends State<DispatchForm> with AutomaticKeepAliveClie
 // モジュール: DispatcherViewContent
 // 説明: 配車履歴の表示、フィルタリング、管理を行うダッシュボードインターフェース。
 //      管理者権限やCSVのエクスポート/インポート機能を含みます。
+// 모듈: DispatcherViewContent
+// 설명: 배차 기록 표시, 필터링 및 관리를 위한 대시보드 인터페이스입니다.
+//      관리자 권한 및 CSV 내보내기/가져오기 기능이 포함되어 있습니다.
 // ============================================================================
 class DispatcherViewContent extends StatefulWidget {
   final bool isAdmin;
@@ -2399,7 +2494,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
   
   DateTimeRange? _dateRange;
 
-  String _selectedFilter = 'all'; // ★内部判定用のキーワード（英語）に変更
+  String _selectedFilter = 'all'; // ★Keyword for internal judgment (English) / ★内部判定用のキーワード（英語）に変更 / ★내부 판단용 키워드(영어)로 변경
 
   String? _sortColumn;
   bool _sortAscending = true;
@@ -2442,6 +2537,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
   // Fetch filtered dispatch data from the API
   // フィルタリングされた配車データをAPIから取得する
+  // API에서 필터링된 배차 데이터 가져오기
   Future<void> _fetchData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
@@ -2465,11 +2561,11 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
             String dbStatus = item['status']?.toString() ?? '';
             
             int statusCode = 0;
-            if (dbStatus == 'キャンセル') {
+            if (dbStatus == 'キャンセル') { // Cancel
               statusCode = 2;
-            } else if (dbStatus == '配車完了') {
+            } else if (dbStatus == '配車完了') { // Dispatch Completed
               statusCode = 1;
-            } else if (dbStatus == '未手配') {
+            } else if (dbStatus == '未手配') { // Unarranged
               statusCode = 0; 
             } else if (dest.isNotEmpty) {
               statusCode = 1; 
@@ -2481,7 +2577,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
               'datetime': formatSafeTime(item['dispatch_time']?.toString()),
               'comp_datetime': formatSafeTime(item['completion_time']?.toString()),
               'status': statusCode,
-              'name': item['customer_name'] ?? '名称未設定',
+              'name': item['customer_name'] ?? '名称未設定', // Unnamed
               'phone': item['phone_number'] ?? '',
               'destination': item['location_to'] ?? '',
               'primary': item['primary_info'] ?? '', 
@@ -2492,7 +2588,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
         });
       }
     } catch (e) {
-      print('通信エラー: $e');
+      print('通信エラー: $e'); // Communication error
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -2508,9 +2604,12 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
   // Update the status of a specific dispatch record via API
   // 特定の配車記録のステータスをAPI経由で更新する
+  // API를 통해 특정 배차 기록의 상태 업데이트
   Future<void> _updateDispatchStatus(String id, String newStatus) async {
     // ==========================================
     // ★ここです！この部屋（関数）にも辞書を持ち込む！
+    // ★Here it is! Bring the dictionary into this room (function) too!
+    // ★여기입니다! 이 방(함수)에도 사전을 가져옵니다!
     final l10n = AppLocalizations.of(context)!;
     // ==========================================
     try {
@@ -2526,9 +2625,9 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
       if (mounted) {
         Color msgColor = Colors.blueGrey;
         String localizedStatus = newStatus;
-        if (newStatus == '未手配') localizedStatus = l10n.statusReserved;
-        if (newStatus == '配車完了') localizedStatus = l10n.statusCompleted;
-        if (newStatus == 'キャンセル') localizedStatus = l10n.statusCanceled;
+        if (newStatus == '未手配') localizedStatus = l10n.statusReserved; // Unarranged
+        if (newStatus == '配車完了') localizedStatus = l10n.statusCompleted; // Dispatch Completed
+        if (newStatus == 'キャンセル') localizedStatus = l10n.statusCanceled; // Cancel
 
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.snackStatusChanged(id, localizedStatus)), backgroundColor: msgColor));
       }
@@ -2539,9 +2638,10 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
   // Show dialog for administrators to manually change status
   // 管理者がステータスを手動変更するためのダイアログを表示する
+  // 관리자가 상태를 수동으로 변경하기 위한 대화상자 표시
   void _showAdminActionDialog(Map<String, dynamic> row) {
     if (!widget.isAdmin) return;
-    final l10n = AppLocalizations.of(context)!; // ★ここに追加！
+    final l10n = AppLocalizations.of(context)!; // ★Add here! / ★ここに追加！ / ★여기에 추가!
 
     showDialog(
       context: context,
@@ -2559,7 +2659,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
               onPressed: () async {
                 Navigator.pop(dialogContext);
                 
-                await _updateDispatchStatus(row['id'], '未手配');
+                await _updateDispatchStatus(row['id'], '未手配'); // Unarranged
                 
                 OpenDispatchTabNotification({
                   'id': row['id'], 
@@ -2589,17 +2689,17 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
               onPressed: () {
                 Navigator.pop(dialogContext);
-                _updateDispatchStatus(row['id'], '配車完了');
+                _updateDispatchStatus(row['id'], '配車完了'); // Dispatch Completed
               },
-              child: Text(l10n.statusCompleted), //既存辞書再利用
+              child: Text(l10n.statusCompleted), // Reuse existing dictionary / 既存辞書再利用 / 기존 사전 재사용
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
               onPressed: () {
                 Navigator.pop(dialogContext);
-                _updateDispatchStatus(row['id'], 'キャンセル');
+                _updateDispatchStatus(row['id'], 'キャンセル'); // Cancel
               },
-              child: Text(l10n.cancelButton), //既存辞書再利用
+              child: Text(l10n.cancelButton), // Reuse existing dictionary / 既存辞書再利用 / 기존 사전 재사용
             ),
           ],
         );
@@ -2609,12 +2709,14 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
   // Export current dashboard view to a local CSV file
   // 現在のダッシュボード表示をローカルのCSVファイルにエクスポートする
+  // 현재 대시보드 보기를 로컬 CSV 파일로 내보내기
   Future<void> _exportCsv(List<Map<String, dynamic>> filteredData) async {
-    final l10n = AppLocalizations.of(context)!; // ★ここに追加！
+    final l10n = AppLocalizations.of(context)!; // ★Add here! / ★ここに追加！ / ★여기에 추가!
     try {
       StringBuffer sb = StringBuffer();
-      sb.write('\uFEFF');
+      sb.write('\uFEFF'); // BOM
       
+      // Dispatch ID, Dispatch Date, Completion Date, Status, Customer No, Customer Name, Phone, Location 1, Lat 1, Lng 1, Location 2, Lat 2, Lng 2, Location 3, Lat 3, Lng 3, Destination, Call, Guidance, Primary
       sb.writeln('伝票ID,配車日時,配車完了日時,ステータス,顧客番号,顧客名,電話番号,配車場所1,緯度1,経度1,配車場所2,緯度2,経度2,配車場所3,緯度3,経度3,配車先(移動局),呼び出し,誘導先,Primary');
 
       for (var row in filteredData) {
@@ -2676,9 +2778,12 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
   // Import local CSV file and send to Laravel API for processing (Upsert)
   // ローカルのCSVファイルをインポートし、Laravel APIに送信して処理（アップサート）する
+  // 로컬 CSV 파일을 가져와 Laravel API로 보내 처리(업서트)
   Future<void> _importCsv() async {
     // ==========================================
     // ★ここです！この部屋（関数）にも辞書を持ち込む！
+    // ★Here it is! Bring the dictionary into this room (function) too!
+    // ★여기입니다! 이 방(함수)에도 사전을 가져옵니다!
     final l10n = AppLocalizations.of(context)!;
     // ==========================================
     try {
@@ -2733,6 +2838,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
   // Sort dashboard data based on column selection
   // 選択された列に基づいてダッシュボードのデータをソートする
+  // 선택한 열에 따라 대시보드 데이터 정렬
   void _sortData(String columnKey) {
     setState(() {
       if (_sortColumn == columnKey) {
@@ -2746,29 +2852,30 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
   // Generate visual badge based on dispatch status
   // 配車ステータスに基づいた視覚的なバッジを生成する
+  // 배차 상태에 따른 시각적 배지 생성
   Widget _buildStatusBadge(int status, String mode) {
     bool isDark = mode == 'dark';
     bool isColor = mode == 'color';
-    final l10n = AppLocalizations.of(context)!; // ★辞書を追加
+    final l10n = AppLocalizations.of(context)!; // ★Add dictionary / ★辞書を追加 / ★사전 추가
 
     Color baseColor;
     String label;
     switch (status) {
       case 0:
         baseColor = isColor ? Colors.blueAccent : (isDark ? Colors.white70 : Colors.black87);
-        label = l10n.statusReserved; // ★辞書に変更
+        label = l10n.statusReserved; // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
         break;
       case 1:
         baseColor = isColor ? Colors.green : (isDark ? Colors.white : Colors.black);
-        label = l10n.statusCompleted; // ★辞書に変更
+        label = l10n.statusCompleted; // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
         break;
       case 2:
         baseColor = isColor ? Colors.redAccent : (isDark ? Colors.white54 : Colors.black54);
-        label = l10n.statusCanceled; // ★辞書に変更
+        label = l10n.statusCanceled; // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
         break;
       default:
         baseColor = Colors.grey;
-        label = l10n.statusUnknown; // ★辞書に変更
+        label = l10n.statusUnknown; // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
     }
 
     bool isCompleted = status == 1;
@@ -2797,6 +2904,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
   // Generate resizable table headers for the dashboard
   // ダッシュボード用のサイズ変更可能なテーブルヘッダーを生成する
+  // 대시보드용 크기 조절 가능한 테이블 헤더 생성
   Widget _buildResizableHeader(String title, String columnKey, double width, ValueChanged<double> onWidthChanged, bool isDark) {
     return SizedBox(
       width: width,
@@ -2850,6 +2958,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
   // Generate a standard table cell
   // 標準的なテーブルセルを生成する
+  // 표준 테이블 셀 생성
   Widget _buildCell(Widget child, double width, bool isDark) {
     return Container(
       width: width,
@@ -2880,7 +2989,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
           String searchText = _searchController.text.trim();
 
           List<Map<String, dynamic>> filteredData = _allData.where((data) {
-            // ★内部キーワード（英語）で判定するように変更
+            // ★Change to judge by internal keyword (English) / ★内部キーワード（英語）で判定するように変更 / ★내부 키워드(영어)로 판단하도록 변경
             if (_selectedFilter == 'reserved' && data['status'] != 0) return false; 
             if (_selectedFilter == 'completed' && data['status'] != 1) return false;
             if (_selectedFilter == 'canceled' && data['status'] != 2) return false;
@@ -2933,11 +3042,11 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
 
           double totalTableWidth = _wCustomerNum + _wId + _wDate + _wCompDate + _wStatus + 16 + _wName + _wPhone + _wDest + _wPrimary;
           
-          final l10n = AppLocalizations.of(context)!; // ★辞書を追加
+          final l10n = AppLocalizations.of(context)!; // ★Add dictionary / ★辞書を追加 / ★사전 추가
 
-          String rangeText = l10n.noDateLimit; // ★辞書に変更
+          String rangeText = l10n.noDateLimit; // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
           if (_dateRange != null) {
-            rangeText = '${l10n.periodPrefix} ${_dateRange!.start.month}/${_dateRange!.start.day} - ${_dateRange!.end.month}/${_dateRange!.end.day}'; // ★辞書に変更
+            rangeText = '${l10n.periodPrefix} ${_dateRange!.start.month}/${_dateRange!.start.day} - ${_dateRange!.end.month}/${_dateRange!.end.day}'; // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
           }
 
           return Container(
@@ -2951,21 +3060,21 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                     children: [
                       Icon(Icons.dashboard, color: isColor ? Colors.indigo : (isDark ? Colors.white : Colors.black), size: 28),
                       const SizedBox(width: 12),
-                      Text(widget.isAdmin ? l10n.dashboardTitleAdmin : l10n.dashboardTitleGeneral, // ★辞書に変更
+                      Text(widget.isAdmin ? l10n.dashboardTitleAdmin : l10n.dashboardTitleGeneral, // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
                       const Spacer(),
                       
                       if (widget.isAdmin) ...[
                         IconButton(
                           icon: Icon(Icons.upload_file, color: isColor ? Colors.orange : (isDark ? Colors.white : Colors.black)),
-                          tooltip: l10n.tooltipImportCsv, // ★辞書に変更
+                          tooltip: l10n.tooltipImportCsv, // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
                           onPressed: _importCsv,
                         ),
                         const SizedBox(width: 8),
 
                         IconButton(
                           icon: Icon(Icons.download, color: isColor ? Colors.green : (isDark ? Colors.white : Colors.black)),
-                          tooltip: l10n.tooltipExportCsv, // ★辞書に変更
+                          tooltip: l10n.tooltipExportCsv, // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
                           onPressed: () {
                             _exportCsv(filteredData);
                           },
@@ -2979,14 +3088,14 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                           onPressed: () {
                             _fetchData(); 
                             ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(l10n.snackDataRefreshed)), // ★スッキリ直す！
+                              SnackBar(content: Text(l10n.snackDataRefreshed)), // ★Fix cleanly! / ★スッキリ直す！ / ★깔끔하게 수정!
                             );
                           },
                         ),
                       const SizedBox(width: 8),
                       IconButton(
                         icon: Icon(Icons.close, color: isColor ? Colors.redAccent : (isDark ? Colors.red[300] : Colors.red)),
-                        tooltip: l10n.tooltipCloseTab, // ★辞書に変更
+                        tooltip: l10n.tooltipCloseTab, // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
                         onPressed: () {
                           CloseTabNotification().dispatch(context);
                         },
@@ -3020,7 +3129,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                             icon: const Icon(Icons.calendar_month),
                             label: Text(rangeText),
                             onPressed: () async {
-                              // ... (カレンダー選択処理の中身はそのまま) ...
+                              // ... (Calendar selection logic unchanged / カレンダー選択処理の中身はそのまま / 캘린더 선택 처리 내용은 그대로) ...
                               DateTimeRange? picked = await showDateRangePicker(
                                 context: context,
                                 firstDate: DateTime(2024),
@@ -3064,7 +3173,9 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                               selectedForegroundColor: isColor ? Colors.white : (isDark ? Colors.black : Colors.white),
                             ),
                             segments: [
-                              // ★ valueは裏側用の英語、labelは表示用の辞書（l10n）に分離！
+                              // ★value is English for backend, label is dictionary (l10n) for display!
+                              // ★valueは裏側用の英語、labelは表示用の辞書（l10n）に分離！
+                              // ★value는 백엔드용 영어, label은 표시용 사전(l10n)으로 분리!
                               ButtonSegment(value: 'all', label: SizedBox(width: 110, child: Center(child: Text(l10n.allFilters)))), 
                               ButtonSegment(value: 'reserved', label: SizedBox(width: 110, child: Center(child: Text(l10n.reservedOnlyFilter)))), 
                               ButtonSegment(value: 'completed', label: SizedBox(width: 110, child: Center(child: Text(l10n.completedOnlyFilter)))),
@@ -3087,7 +3198,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                             setState(() {}); 
                           },
                           decoration: InputDecoration(
-                            hintText: l10n.searchHint, // ★辞書に変更
+                            hintText: l10n.searchHint, // ★Change to dictionary / ★辞書に変更 / ★사전으로 변경
                             prefixIcon: const Icon(Icons.search),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                             isDense: true,
@@ -3125,7 +3236,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
                               ),
                               child: Row(
                                 children: [
-                                  // ★見出しを辞書に変更
+                                  // ★Change headings to dictionary / ★見出しを辞書に変更 / ★제목을 사전으로 변경
                                   _buildResizableHeader(l10n.colCustomerNo, 'customer_number', _wCustomerNum, (w) => setState(() => _wCustomerNum = w), isDark),
                                   _buildResizableHeader(l10n.colDispatchId, 'id', _wId, (w) => setState(() => _wId = w), isDark),
                                   _buildResizableHeader(l10n.colDispatchDate, 'datetime', _wDate, (w) => setState(() => _wDate = w), isDark),
