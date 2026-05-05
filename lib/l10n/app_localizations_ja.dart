@@ -439,4 +439,17 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get adminPinLabel => '管理者PINコード';
+
+  @override
+  String get unnamedCustomer => '名称未設定';
+
+  @override
+  String tabCustomerName(String name) {
+    return '　$name 様　';
+  }
+
+  @override
+  String listCustomerName(String name) {
+    return '$name 様';
+  }
 }

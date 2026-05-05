@@ -166,5 +166,22 @@
   "@tabEditingCustomer": { "placeholders": { "name": { "type": "String" } } },
   "tabSavedDispatch": "  {title} (저장됨)  ",
   "@tabSavedDispatch": { "placeholders": { "title": { "type": "String" } } },
-  "adminPinLabel": "관리자 PIN 코드"
+  "adminPinLabel": "관리자 PIN 코드",
+  "unnamedCustomer": "이름 없음",
+  "tabCustomerName": "　{name} 님　",
+  "@tabCustomerName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listCustomerName": "{name} 님",
+  "@listCustomerName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

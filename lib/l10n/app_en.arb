@@ -169,5 +169,22 @@
   "@tabEditingCustomer": { "placeholders": { "name": { "type": "String" } } },
   "tabSavedDispatch": "  {title} (Saved)  ",
   "@tabSavedDispatch": { "placeholders": { "title": { "type": "String" } } },
-  "adminPinLabel": "Admin PIN"
+  "adminPinLabel": "Admin PIN",
+  "unnamedCustomer": "Unnamed",
+  "tabCustomerName": " {name} ",
+  "@tabCustomerName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listCustomerName": "{name}",
+  "@listCustomerName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

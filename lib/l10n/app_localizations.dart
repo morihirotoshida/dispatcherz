@@ -8,6 +8,7 @@ import 'package:intl/intl.dart' as intl;
 import 'app_localizations_en.dart';
 import 'app_localizations_ja.dart';
 import 'app_localizations_ko.dart';
+import 'app_localizations_pa.dart';
 
 // ignore_for_file: type=lint
 
@@ -98,6 +99,7 @@ abstract class AppLocalizations {
     Locale('en'),
     Locale('ja'),
     Locale('ko'),
+    Locale('pa'),
   ];
 
   /// No description provided for @appTitle.
@@ -903,6 +905,24 @@ abstract class AppLocalizations {
   /// In ja, this message translates to:
   /// **'管理者PINコード'**
   String get adminPinLabel;
+
+  /// No description provided for @unnamedCustomer.
+  ///
+  /// In ja, this message translates to:
+  /// **'名称未設定'**
+  String get unnamedCustomer;
+
+  /// No description provided for @tabCustomerName.
+  ///
+  /// In ja, this message translates to:
+  /// **'　{name} 様　'**
+  String tabCustomerName(String name);
+
+  /// No description provided for @listCustomerName.
+  ///
+  /// In ja, this message translates to:
+  /// **'{name} 様'**
+  String listCustomerName(String name);
 }
 
 class _AppLocalizationsDelegate
@@ -916,7 +936,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'ja', 'ko'].contains(locale.languageCode);
+      <String>['en', 'ja', 'ko', 'pa'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -931,6 +951,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsJa();
     case 'ko':
       return AppLocalizationsKo();
+    case 'pa':
+      return AppLocalizationsPa();
   }
 
   throw FlutterError(

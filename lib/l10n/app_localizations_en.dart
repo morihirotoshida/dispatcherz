@@ -445,4 +445,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get adminPinLabel => 'Admin PIN';
+
+  @override
+  String get unnamedCustomer => 'Unnamed';
+
+  @override
+  String tabCustomerName(String name) {
+    return ' $name ';
+  }
+
+  @override
+  String listCustomerName(String name) {
+    return '$name';
+  }
 }

@@ -170,5 +170,22 @@
   "@tabEditingCustomer": { "placeholders": { "name": { "type": "String" } } },
   "tabSavedDispatch": "　{title} (保存済)　",
   "@tabSavedDispatch": { "placeholders": { "title": { "type": "String" } } },
-  "adminPinLabel": "管理者PINコード"
+  "adminPinLabel": "管理者PINコード",
+  "unnamedCustomer": "名称未設定",
+  "tabCustomerName": "　{name} 様　",
+  "@tabCustomerName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "listCustomerName": "{name} 様",
+  "@listCustomerName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

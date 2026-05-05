@@ -440,4 +440,17 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get adminPinLabel => '관리자 PIN 코드';
+
+  @override
+  String get unnamedCustomer => '이름 없음';
+
+  @override
+  String tabCustomerName(String name) {
+    return '　$name 님　';
+  }
+
+  @override
+  String listCustomerName(String name) {
+    return '$name 님';
+  }
 }

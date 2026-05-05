@@ -196,7 +196,9 @@ class _DispatcherZAppState extends State<DispatcherZApp> {
     if (LayoutSettings.currentLanguage == 'en') {
       _locale = const Locale('en', '');
     } else if (LayoutSettings.currentLanguage == 'ko') {
-      _locale = const Locale('ko', 'KR'); // ★Add Korean! / ★韓国語を追加！ / ★한국어 추가!
+      _locale = const Locale('ko', 'KR');
+    } else if (LayoutSettings.currentLanguage == 'pa') {
+      _locale = const Locale('pa', 'PK'); // ★パンジャブ語のルートを追加！
     } else {
       _locale = const Locale('ja', 'JP');
     }
@@ -230,6 +232,7 @@ class _DispatcherZAppState extends State<DispatcherZApp> {
             Locale('ja', 'JP'), 
             Locale('en', ''),
             Locale('ko', 'KR'), // ★Add here! / ★ここに追加！ / ★여기에 추가!
+            Locale('pa', 'PK'), // ★ここに追加: パンジャブ語 (パキスタン / Shahmukhi文字)
           ],
           // -------------------
 
@@ -828,7 +831,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
   // 既存の予約データを新しいタブで開く
   // 기존 예약 데이터를 새 탭에서 열기
   void _openReservationTab(Map<String, dynamic> reservationData) {
-    final name = reservationData['name'] ?? '名称未設定'; // Unnamed
+    // ★追加: 辞書を読み込む
+    final l10n = AppLocalizations.of(context)!; 
+
+    // ★変更: '名称未設定' を辞書から呼び出す
+    final name = reservationData['name'] ?? l10n.unnamedCustomer; 
+    
     final existingIndex = _tabs.indexWhere((tab) => tab.title.contains(name));
     
     if (existingIndex != -1) {
@@ -843,7 +851,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
       _tabs.insert(
         newTabIndex,
         DispatchTab(
-          title: '　$name 様　', // Mr./Ms. $name
+          // ★変更: '　$name 様　' を辞書から呼び出す
+          title: l10n.tabCustomerName(name), 
           content: DispatchForm(key: UniqueKey(), initialData: reservationData), 
           isReservation: true, 
         ),
@@ -992,7 +1001,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
     if (LayoutSettings.currentLanguage == 'en') {
       DispatcherZApp.of(context)?.setLocale(const Locale('en', ''));
     } else if (LayoutSettings.currentLanguage == 'ko') {
-      DispatcherZApp.of(context)?.setLocale(const Locale('ko', 'KR')); // ★Add Korean branch! / ★韓国語の分岐を追加！ / ★한국어 분기 추가!
+      DispatcherZApp.of(context)?.setLocale(const Locale('ko', 'KR'));
+    } else if (LayoutSettings.currentLanguage == 'pa') {
+      DispatcherZApp.of(context)?.setLocale(const Locale('pa', 'PK')); // ★パンジャブ語のルートを追加！
     } else {
       DispatcherZApp.of(context)?.setLocale(const Locale('ja', 'JP'));
     }
@@ -1102,7 +1113,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                                 children: [
                                   Text('📅 ${res['datetime']}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: dateText)),
                                   const SizedBox(height: 4),
-                                  Text('${res['name']} 様', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
+                                  Text(l10n.listCustomerName(res['name'].toString()), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black)),
                                   Row(
                                     children: [
                                       Icon(Icons.phone, size: 16, color: isDark ? Colors.white : Colors.black),
@@ -1250,7 +1261,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                                     child: Container(
                                       decoration: BoxDecoration(
                                         color: bgColor,
-                                        border: Border(right: BorderSide(color: isColor ? Colors.white : (isDark ? Colors.grey[800]! : Colors.white), width: 1.0)),
+                                        border: BorderDirectional(end: BorderSide(color: isColor ? Colors.white : (isDark ? Colors.grey[800]! : Colors.white), width: 1.0)),
                                       ),
                                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                                       alignment: Alignment.center,
@@ -1272,7 +1283,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin, 
                       Container(
                         width: 44,
                         decoration: BoxDecoration(
-                          border: Border(left: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey, width: 0.5)),
+                          border: BorderDirectional(start: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey, width: 0.5)),
                         ),
                         alignment: Alignment.center,
                         child: PopupMenuButton<int>(
@@ -1649,6 +1660,18 @@ class _AppMenuBarState extends State<AppMenuBar> {
                       DispatcherZApp.of(context)?.setLocale(const Locale('ko', 'KR'));
                     },
                     child: const Text('Korean (한국어)'), 
+                  ),
+                  // ==========================================
+                  // ★Added from here: Korean switch button
+                  // ★ここから追加：韓国語切り替えボタン
+                  // ★여기부터 추가: 한국어 전환 버튼
+                  MenuItemButton(
+                    onPressed: () {
+                      LayoutSettings.currentLanguage = 'pa';
+                      LayoutSettings.save('default');
+                      DispatcherZApp.of(context)?.setLocale(const Locale('pa', 'PK'));
+                    },
+                    child: const Text('Punjabi (پنجابی)'), 
                   ),
                   // ==========================================
                 ],
@@ -2913,7 +2936,7 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
           Container(
             width: width,
             decoration: BoxDecoration(
-              border: Border(right: BorderSide(color: isDark ? Colors.grey[600]! : Colors.grey[400]!)), 
+              border: BorderDirectional(end: BorderSide(color: isDark ? Colors.grey[600]! : Colors.grey[400]!)),
             ),
             child: InkWell(
               onTap: () => _sortData(columnKey),
@@ -2931,8 +2954,8 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
               ),
             ),
           ),
-          Positioned(
-            right: 0,
+          PositionedDirectional(
+            end: 0,
             top: 0,
             bottom: 0,
             child: MouseRegion(
@@ -2964,9 +2987,9 @@ class _DispatcherViewContentState extends State<DispatcherViewContent> with Auto
       width: width,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       decoration: BoxDecoration(
-        border: Border(right: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey[300]!)),
+        border: BorderDirectional(end: BorderSide(color: isDark ? Colors.grey[700]! : Colors.grey[300]!)),
       ),
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: child,
     );
   }
