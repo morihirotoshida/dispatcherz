@@ -1,7 +1,7 @@
 # dispatcherZ インストール ＆ 環境構築手順書（Zorin OS編）
 
 **次世代タクシー配車・顧客管理システム**  
-Version: 1.2  
+Version: 1.3  
 OS: Zorin OS (Ubuntu/Debian系 Linux)  
 
 geditからのコマンドは、geditをインストールしないと発動しません。  

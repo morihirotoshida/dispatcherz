@@ -1,4 +1,4 @@
-# dispatcherZ Ver.1.2 ユーザーマニュアル ＆ TIPS
+# dispatcherZ Ver.1.3 ユーザーマニュアル ＆ TIPS
 
 **次世代タクシー配車・顧客管理システム**  
 Version: 1.3    
